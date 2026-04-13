@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+      - name: appointment-service
+        image: appointment-service:latest
+        ports:
+        - containerPort: 3003
+        env:
+        - name: MONGO_URI
+          value: "mongodb://mongo:27017/healthcare"
+        - name: JWT_SECRET
+          value: "your-jwt-secret"
+        - name: PORT
+          value: "3003"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+spec:
+  selector:
+    app: appointment-service
+  ports:
+  - port: 3003
+    targetPort: 3003
+  type: ClusterIP
