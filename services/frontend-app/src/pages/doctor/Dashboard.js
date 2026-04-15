@@ -2,36 +2,99 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const DoctorDashboard = () => {
+const API_BASE = "http://localhost:3000";
+
+const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const handleLogout = () => { logout(); navigate('/login'); };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Start Telemedicine Session
+  const startSession = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: user?.id || "demoDoctor",
+          patientId: "demoPatient"
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data?.meetingLink) {
+        window.open(data.meetingLink, "_blank");
+      } else {
+        alert("Failed to create session");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error starting session");
+    }
+  };
+
+  // View Doctors (for testing)
+  const viewDoctors = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/doctors`);
+      const data = await res.json();
+      console.log("Doctors:", data);
+      alert("Check console for doctors list");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>👨‍⚕️ Doctor Dashboard</h1>
-        <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
+        <button style={styles.logoutBtn} onClick={handleLogout}>
+          Logout
+        </button>
       </div>
+
       <div style={styles.welcome}>
-        <h2>Welcome, Dr. {user?.name}! 👋</h2>
+        <h2>Welcome, Dr. {user?.name || 'Doctor'}! 👋</h2>
         <p>Email: {user?.email} | Role: {user?.role}</p>
       </div>
+
       <div style={styles.grid}>
         <div style={styles.card}>
           <h3>📅 My Appointments</h3>
           <p>View today's appointments</p>
-          <button style={styles.btn} onClick={() => navigate('/doctor/appointments')}>View Appointments</button>
+          <button style={styles.btn} onClick={viewDoctors}>
+            View Appointments
+          </button>
         </div>
+
         <div style={styles.card}>
           <h3>🕐 My Availability</h3>
           <p>Manage your schedule</p>
-          <button style={styles.btn} onClick={() => navigate('/doctor/availability')}>Set Availability</button>
+          <button style={styles.btn} onClick={() => navigate('/doctor/availability')}>
+            Set Availability
+          </button>
         </div>
+
+        <div style={styles.card}>
+          <h3>💊 Prescriptions</h3>
+          <p>Issue digital prescriptions</p>
+          <button style={styles.btn}>
+            Write Prescription
+          </button>
+        </div>
+
         <div style={styles.card}>
           <h3>🎥 Start Consultation</h3>
           <p>Begin telemedicine session</p>
-          <button style={styles.btn} onClick={() => navigate('/doctor/consultation')}>Start Session</button>
+          <button style={styles.btn} onClick={startSession}>
+            Start Session
+          </button>
         </div>
       </div>
     </div>
@@ -49,4 +112,4 @@ const styles = {
   logoutBtn: { padding: '10px 20px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }
 };
 
-export default DoctorDashboard;
+export default Dashboard;
