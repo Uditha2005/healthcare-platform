@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
 
@@ -32,7 +33,7 @@ const upload = multer({
 // GET /profile
 exports.getProfile = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ userId: req.user.id }).populate('userId', 'name email');
+    const patient = await Patient.findOne({ userId: req.user.id });
     if (!patient) {
       return res.status(404).json({ message: 'Patient profile not found' });
     }
@@ -45,16 +46,13 @@ exports.getProfile = async (req, res) => {
 // PUT /profile
 exports.updateProfile = async (req, res) => {
   try {
-    const updates = req.body;
+    const updates = { ...req.body, userId: req.user.id };
     const patient = await Patient.findOneAndUpdate(
       { userId: req.user.id },
       updates,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true, upsert: true }
     );
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient profile not found' });
-    }
-    res.json({ message: 'Profile updated successfully', patient });
+    res.json({ message: 'Profile saved successfully', patient });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

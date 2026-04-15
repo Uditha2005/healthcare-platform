@@ -1,4 +1,5 @@
 const Appointment = require('../models/Appointment');
+const User = require('../models/User');
 
 // GET /appointments
 exports.getAppointments = async (req, res) => {
@@ -11,7 +12,7 @@ exports.getAppointments = async (req, res) => {
     }
     // Admin can see all
 
-    const appointments = await Appointment.find(query).populate('patientId', 'name email').populate('doctorId', 'name email');
+    const appointments = await Appointment.find(query);
     res.json(appointments);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
