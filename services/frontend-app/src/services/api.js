@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: 'http://localhost:3001/api',
 });
 
-// Attach token to every request
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -13,7 +12,6 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-// Auth
 export const registerUser = (data) => API.post('/auth/register', data);
 export const loginUser = (data) => API.post('/auth/login', data);
 export const getMe = () => API.get('/auth/me');

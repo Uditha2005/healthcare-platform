@@ -1,51 +1,53 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+require('dotenv').config();
 
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import PatientDashboard from './pages/patient/Dashboard';
-import DoctorDashboard from './pages/doctor/Dashboard';
-import AdminDashboard from './pages/admin/Dashboard';
+const app = express();
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={styles.loading}>Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/login" />;
-  return children;
-};
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
 
-const AppRoutes = () => {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={styles.loading}>Loading...</div>;
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'API Gateway is running' });
+});
 
-  return (
-    <Routes>
-      <Route path="/" element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Navigate to="/login" />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/patient/dashboard" element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>} />
-      <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
-      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
-  );
-};
+app.use('/api/auth', createProxyMiddleware({
+  target: process.env.AUTH_SERVICE_URL,
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      res.status(502).json({ message: 'Auth service unavailable' });
+    }
+  }
+}));
 
-const App = () => (
-  <AuthProvider>
-    <Router>
-      <AppRoutes />
-      <ToastContainer position="top-right" autoClose={3000} />
-    </Router>
-  </AuthProvider>
-);
+app.use('/api/patient', createProxyMiddleware({
+  target: process.env.PATIENT_SERVICE_URL,
+  changeOrigin: true,
+}));
 
-const styles = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', fontSize: '18px', color: '#3182ce' }
-};
+app.use('/api/doctor', createProxyMiddleware({
+  target: process.env.DOCTOR_SERVICE_URL,
+  changeOrigin: true,
+}));
 
-export default App;
+app.use('/api/appointment', createProxyMiddleware({
+  target: process.env.APPOINTMENT_SERVICE_URL,
+  changeOrigin: true,
+}));
+
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`API Gateway running on port ${PORT}`);
+});
