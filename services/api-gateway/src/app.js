@@ -6,18 +6,20 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(helmet());
-app.use(cors());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
-// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'API Gateway is running' });
 });
 
 /* =========================
-   Route: Doctor Service
-   (mapped to your existing service)
+   Doctor Service Route
 ========================= */
 app.use('/api/doctors', createProxyMiddleware({
   target: process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002',
@@ -25,8 +27,7 @@ app.use('/api/doctors', createProxyMiddleware({
 }));
 
 /* =========================
-   Route: Telemedicine Service
-   (replacing appointment/patient for now)
+   Telemedicine / Sessions Route
 ========================= */
 app.use('/api/sessions', createProxyMiddleware({
   target: process.env.TELEMEDICINE_SERVICE_URL || 'http://localhost:5003',
@@ -34,13 +35,16 @@ app.use('/api/sessions', createProxyMiddleware({
 }));
 
 /* =========================
-   KEEP ORIGINAL STRUCTURE (fallbacks)
-   (so your code doesn't break if others exist)
+   Core Services
 ========================= */
-
 app.use('/api/auth', createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
   changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      res.status(502).json({ message: 'Auth service unavailable' });
+    }
+  }
 }));
 
 app.use('/api/patient', createProxyMiddleware({
@@ -53,7 +57,11 @@ app.use('/api/appointment', createProxyMiddleware({
   changeOrigin: true,
 }));
 
-// Start server
+// 404 fallback
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

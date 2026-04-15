@@ -13,14 +13,12 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  // 🎥 START TELEMEDICINE SESSION
+  // Start Telemedicine Session
   const startSession = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/sessions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           doctorId: user?.id || "demoDoctor",
           patientId: "demoPatient"
@@ -40,7 +38,7 @@ const Dashboard = () => {
     }
   };
 
-  // 📅 TEST DOCTOR API
+  // View Doctors (for testing)
   const viewDoctors = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/doctors`);
@@ -62,9 +60,8 @@ const Dashboard = () => {
       </div>
 
       <div style={styles.welcome}>
-        <h2>Welcome, Dr. {user?.name}! 👋</h2>
-        <p>Email: {user?.email}</p>
-        <p>Role: {user?.role}</p>
+        <h2>Welcome, Dr. {user?.name || 'Doctor'}! 👋</h2>
+        <p>Email: {user?.email} | Role: {user?.role}</p>
       </div>
 
       <div style={styles.grid}>
@@ -79,7 +76,7 @@ const Dashboard = () => {
         <div style={styles.card}>
           <h3>🕐 My Availability</h3>
           <p>Manage your schedule</p>
-          <button style={styles.btn}>
+          <button style={styles.btn} onClick={() => navigate('/doctor/availability')}>
             Set Availability
           </button>
         </div>
