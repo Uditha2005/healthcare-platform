@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const twilio = require('twilio');
 const NotificationLog = require('../models/NotificationLog');
 
 const createTransporter = () => {
@@ -18,12 +17,66 @@ const createTransporter = () => {
   });
 };
 
-const createTwilioClient = () => {
-  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-    return null;
+const normalizeSriLankanPhone = (phone) => {
+  const normalized = String(phone || '').replace(/\D/g, '');
+
+  if (normalized.startsWith('94')) return normalized;
+  if (normalized.startsWith('0')) return `94${normalized.slice(1)}`;
+  if (normalized.startsWith('7') && normalized.length === 9) return `94${normalized}`;
+
+  return normalized;
+};
+
+const sendSmsWithNotifyLk = async ({ phone, message }) => {
+  const userId = process.env.NOTIFYLK_USER_ID;
+  const apiKey = process.env.NOTIFYLK_API_KEY;
+  const senderId = process.env.NOTIFYLK_SENDER_ID || 'NotifyDEMO';
+
+  if (!userId || !apiKey || !senderId) {
+    return {
+      status: 'skipped',
+      error: 'Notify.lk credentials are not configured'
+    };
   }
 
-  return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  const to = normalizeSriLankanPhone(phone);
+  const params = new URLSearchParams({
+    user_id: userId,
+    api_key: apiKey,
+    sender_id: senderId,
+    to,
+    message
+  });
+
+  const baseUrl = process.env.NOTIFYLK_API_BASE_URL || 'https://app.notify.lk/api/v1';
+  const response = await fetch(`${baseUrl}/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params.toString()
+  });
+
+  let result = null;
+  try {
+    result = await response.json();
+  } catch (err) {
+    result = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      (result && (result.message || result.data)) || `Notify.lk API request failed with status ${response.status}`
+    );
+  }
+
+  if (!result || result.status !== 'success') {
+    throw new Error(
+      (result && (result.message || result.data)) || 'Notify.lk API returned a non-success status'
+    );
+  }
+
+  return { status: 'sent' };
 };
 
 const sendThroughChannels = async ({ recipient, subject, message }) => {
@@ -48,15 +101,15 @@ const sendThroughChannels = async ({ recipient, subject, message }) => {
     }
   }
 
-  const twilioClient = createTwilioClient();
-  if (recipient.phone && twilioClient) {
+  if (recipient.phone) {
     try {
-      await twilioClient.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: recipient.phone
+      const smsResult = await sendSmsWithNotifyLk({
+        phone: recipient.phone,
+        message
       });
-      smsStatus = 'sent';
+
+      smsStatus = smsResult.status;
+      smsError = smsResult.error;
     } catch (err) {
       smsStatus = 'failed';
       smsError = err.message;

@@ -34,12 +34,14 @@ spec:
           value: "your-sendgrid-api-key"
         - name: SMTP_FROM
           value: "noreply@yourdomain.com"
-        - name: TWILIO_ACCOUNT_SID
-          value: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        - name: TWILIO_AUTH_TOKEN
-          value: "your-twilio-auth-token"
-        - name: TWILIO_PHONE_NUMBER
-          value: "+10000000000"
+        - name: NOTIFYLK_USER_ID
+          value: "31493"
+        - name: NOTIFYLK_API_KEY
+          value: "your-notifylk-api-key"
+        - name: NOTIFYLK_SENDER_ID
+          value: "NotifyDEMO"
+        - name: NOTIFYLK_API_BASE_URL
+          value: "https://app.notify.lk/api/v1"
         - name: PORT
           value: "3005"
 ---
