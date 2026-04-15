@@ -5,11 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const DoctorDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
     <div style={styles.container}>
@@ -17,33 +13,25 @@ const DoctorDashboard = () => {
         <h1 style={styles.title}>👨‍⚕️ Doctor Dashboard</h1>
         <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
       </div>
-
       <div style={styles.welcome}>
         <h2>Welcome, Dr. {user?.name}! 👋</h2>
-        <p>Email: {user?.email}</p>
-        <p>Role: {user?.role}</p>
+        <p>Email: {user?.email} | Role: {user?.role}</p>
       </div>
-
       <div style={styles.grid}>
         <div style={styles.card}>
           <h3>📅 My Appointments</h3>
           <p>View today's appointments</p>
-          <button style={styles.btn}>View Appointments</button>
+          <button style={styles.btn} onClick={() => navigate('/doctor/appointments')}>View Appointments</button>
         </div>
         <div style={styles.card}>
           <h3>🕐 My Availability</h3>
           <p>Manage your schedule</p>
-          <button style={styles.btn}>Set Availability</button>
-        </div>
-        <div style={styles.card}>
-          <h3>💊 Prescriptions</h3>
-          <p>Issue digital prescriptions</p>
-          <button style={styles.btn}>Write Prescription</button>
+          <button style={styles.btn} onClick={() => navigate('/doctor/availability')}>Set Availability</button>
         </div>
         <div style={styles.card}>
           <h3>🎥 Start Consultation</h3>
           <p>Begin telemedicine session</p>
-          <button style={styles.btn}>Start Session</button>
+          <button style={styles.btn} onClick={() => navigate('/doctor/consultation')}>Start Session</button>
         </div>
       </div>
     </div>

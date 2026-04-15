@@ -6,10 +6,7 @@ const PatientDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
     <div style={styles.container}>
@@ -17,33 +14,30 @@ const PatientDashboard = () => {
         <h1 style={styles.title}>🏥 Patient Dashboard</h1>
         <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
       </div>
-
       <div style={styles.welcome}>
         <h2>Welcome, {user?.name}! 👋</h2>
-        <p>Email: {user?.email}</p>
-        <p>Role: {user?.role}</p>
+        <p>Email: {user?.email} | Role: {user?.role}</p>
       </div>
-
       <div style={styles.grid}>
         <div style={styles.card}>
           <h3>📅 My Appointments</h3>
           <p>View and manage your appointments</p>
-          <button style={styles.btn}>View Appointments</button>
+          <button style={styles.btn} onClick={() => navigate('/patient/browse-doctors')}>Book Appointment</button>
         </div>
         <div style={styles.card}>
           <h3>👨‍⚕️ Find Doctors</h3>
           <p>Browse and book doctors</p>
-          <button style={styles.btn}>Browse Doctors</button>
+          <button style={styles.btn} onClick={() => navigate('/patient/browse-doctors')}>Browse Doctors</button>
         </div>
         <div style={styles.card}>
-          <h3>📋 Medical History</h3>
-          <p>View your medical records</p>
-          <button style={styles.btn}>View History</button>
+          <h3>📋 Upload Reports</h3>
+          <p>Upload your medical records</p>
+          <button style={styles.btn} onClick={() => navigate('/patient/upload-reports')}>Upload Report</button>
         </div>
         <div style={styles.card}>
           <h3>🎥 Video Consultation</h3>
           <p>Join your telemedicine session</p>
-          <button style={styles.btn}>Join Session</button>
+          <button style={styles.btn} onClick={() => navigate('/patient/video-consultation')}>Join Session</button>
         </div>
       </div>
     </div>

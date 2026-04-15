@@ -5,11 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
     <div style={styles.container}>
@@ -17,33 +13,20 @@ const AdminDashboard = () => {
         <h1 style={styles.title}>🛡️ Admin Dashboard</h1>
         <button style={styles.logoutBtn} onClick={handleLogout}>Logout</button>
       </div>
-
       <div style={styles.welcome}>
         <h2>Welcome, Admin {user?.name}! 👋</h2>
-        <p>Email: {user?.email}</p>
-        <p>Role: {user?.role}</p>
+        <p>Email: {user?.email} | Role: {user?.role}</p>
       </div>
-
       <div style={styles.grid}>
         <div style={styles.card}>
           <h3>👥 Manage Users</h3>
           <p>View and manage all users</p>
-          <button style={styles.btn}>View Users</button>
+          <button style={styles.btn} onClick={() => navigate('/admin/users')}>View Users</button>
         </div>
         <div style={styles.card}>
           <h3>✅ Verify Doctors</h3>
           <p>Approve doctor registrations</p>
-          <button style={styles.btn}>Verify Doctors</button>
-        </div>
-        <div style={styles.card}>
-          <h3>📊 Reports</h3>
-          <p>View platform statistics</p>
-          <button style={styles.btn}>View Reports</button>
-        </div>
-        <div style={styles.card}>
-          <h3>⚙️ Settings</h3>
-          <p>Manage platform settings</p>
-          <button style={styles.btn}>Settings</button>
+          <button style={styles.btn} onClick={() => navigate('/admin/verify-doctors')}>Verify Doctors</button>
         </div>
       </div>
     </div>
