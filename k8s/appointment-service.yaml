@@ -15,6 +15,7 @@ spec:
       containers:
       - name: appointment-service
         image: appointment-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3003
         env:
