@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-require('dotenv').config();
+require('dotenv').config(); // Remove the path, let it auto-detect
 
 const appointmentRoutes = require('./routes/appointmentRoutes');
 
@@ -13,7 +13,11 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/appointments', appointmentRoutes);
 app.use('/api/appointment', appointmentRoutes);
+app.use('/appointments', appointmentRoutes);
+app.use('/appointment', appointmentRoutes);
+app.use('/', appointmentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

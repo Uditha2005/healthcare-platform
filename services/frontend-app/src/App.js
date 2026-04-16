@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -13,6 +13,9 @@ import BrowseDoctors from './pages/patient/BrowseDoctors';
 import BookAppointment from './pages/patient/BookAppointment';
 import UploadReports from './pages/patient/UploadReports';
 import VideoConsultation from './pages/patient/VideoConsultation';
+import PatientProfile from './pages/patient/Profile';
+import PatientAppointments from './pages/patient/MyAppointments';
+import PatientMedicalRecords from './pages/patient/MedicalRecords';
 
 // Doctor
 import DoctorDashboard from './pages/doctor/Dashboard';
@@ -47,6 +50,9 @@ const App = () => {
           <Route path="/patient/dashboard" element={<ProtectedRoute role="patient"><PatientDashboard /></ProtectedRoute>} />
           <Route path="/patient/browse-doctors" element={<ProtectedRoute role="patient"><BrowseDoctors /></ProtectedRoute>} />
           <Route path="/patient/book-appointment" element={<ProtectedRoute role="patient"><BookAppointment /></ProtectedRoute>} />
+          <Route path="/patient/profile" element={<ProtectedRoute role="patient"><PatientProfile /></ProtectedRoute>} />
+          <Route path="/patient/appointments" element={<ProtectedRoute role="patient"><PatientAppointments /></ProtectedRoute>} />
+          <Route path="/patient/medical-records" element={<ProtectedRoute role="patient"><PatientMedicalRecords /></ProtectedRoute>} />
           <Route path="/patient/upload-reports" element={<ProtectedRoute role="patient"><UploadReports /></ProtectedRoute>} />
           <Route path="/patient/video-consultation" element={<ProtectedRoute role="patient"><VideoConsultation /></ProtectedRoute>} />
 

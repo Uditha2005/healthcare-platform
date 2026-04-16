@@ -43,6 +43,7 @@ const patientSchema = new mongoose.Schema({
   reports: [{
     filename: String,
     originalName: String,
+    description: String,
     uploadDate: {
       type: Date,
       default: Date.now

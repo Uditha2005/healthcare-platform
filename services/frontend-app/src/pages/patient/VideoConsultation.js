@@ -9,9 +9,9 @@ const VideoConsultation = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('/appointment/appointments')
+    API.get('/appointment')
       .then(res => {
-        const booked = (res.data.appointments || []).filter(a => a.status === 'confirmed');
+        const booked = (Array.isArray(res.data) ? res.data : res.data.appointments || []).filter(a => a.status === 'confirmed');
         setSessions(booked);
       })
       .catch(() => setSessions([]))

@@ -15,14 +15,14 @@ spec:
       containers:
       - name: patient-service
         image: patient-service:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never
         ports:
         - containerPort: 3002
         env:
         - name: MONGO_URI
           value: "mongodb://mongo:27017/healthcare"
         - name: JWT_SECRET
-          value: "your-jwt-secret"
+          value: "your_super_secret_jwt_key_2024"
         - name: PORT
           value: "3002"
 ---

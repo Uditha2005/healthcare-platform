@@ -1,8 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE = "http://localhost:3000";
+import API from '../../services/api';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -16,37 +15,19 @@ const Dashboard = () => {
   // Start Telemedicine Session
   const startSession = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/sessions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          doctorId: user?.id || "demoDoctor",
-          patientId: "demoPatient"
-        }),
+      const res = await API.post('/sessions', {
+        doctorId: user?.id || "demoDoctor",
+        patientId: "demoPatient"
       });
 
-      const data = await res.json();
-
-      if (data?.meetingLink) {
-        window.open(data.meetingLink, "_blank");
+      if (res.data?.meetingLink) {
+        window.open(res.data.meetingLink, "_blank");
       } else {
         alert("Failed to create session");
       }
     } catch (err) {
       console.error(err);
       alert("Error starting session");
-    }
-  };
-
-  // View Doctors (for testing)
-  const viewDoctors = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/doctors`);
-      const data = await res.json();
-      console.log("Doctors:", data);
-      alert("Check console for doctors list");
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -68,7 +49,7 @@ const Dashboard = () => {
         <div style={styles.card}>
           <h3>📅 My Appointments</h3>
           <p>View today's appointments</p>
-          <button style={styles.btn} onClick={viewDoctors}>
+          <button style={styles.btn} onClick={() => navigate('/doctor/appointments')}>
             View Appointments
           </button>
         </div>
