@@ -2,6 +2,7 @@ const Patient = require('../models/Patient');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const PDFDocument = require('pdfkit');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
@@ -226,6 +227,81 @@ exports.deleteReport = async (req, res) => {
     await patient.save();
 
     res.json({ message: 'Report deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// GET /reports/:reportId/download - Download a report file
+exports.downloadReport = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ userId: req.user.id });
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+
+    const report = patient.reports.id(req.params.reportId);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    const filePath = report.path || path.join(__dirname, '..', '..', 'uploads', report.filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Report file not found on server' });
+    }
+
+    res.download(filePath, report.originalName || report.filename);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// GET /prescriptions/download - Download all prescriptions as PDF
+exports.downloadPrescriptions = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ userId: req.user.id });
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+
+    if (!patient.prescriptions || patient.prescriptions.length === 0) {
+      return res.status(404).json({ message: 'No prescriptions found' });
+    }
+
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=prescriptions.pdf');
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('Medical Prescriptions', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica').fillColor('#666')
+      .text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    doc.moveDown(1);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#ccc').stroke();
+    doc.moveDown(1);
+
+    // Each prescription
+    patient.prescriptions.forEach((rx, i) => {
+      if (doc.y > 680) doc.addPage();
+
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000')
+        .text(`${i + 1}. ${rx.medication}`);
+      doc.moveDown(0.3);
+      doc.fontSize(11).font('Helvetica').fillColor('#333');
+      doc.text(`Dosage: ${rx.dosage}`);
+      if (rx.instructions) {
+        doc.text(`Instructions: ${rx.instructions}`);
+      }
+      doc.text(`Date: ${rx.date ? new Date(rx.date).toLocaleDateString() : 'N/A'}`);
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e0e0e0').stroke();
+      doc.moveDown(0.8);
+    });
+
+    doc.end();
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

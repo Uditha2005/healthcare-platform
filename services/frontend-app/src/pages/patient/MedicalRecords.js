@@ -34,6 +34,38 @@ const MedicalRecords = () => {
     }
   };
 
+  const downloadPrescriptions = async () => {
+    try {
+      const res = await API.get('/patient/prescriptions/download', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'prescriptions.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to download prescriptions');
+    }
+  };
+
+  const downloadReport = async (reportId, filename) => {
+    try {
+      const res = await API.get(`/patient/reports/${reportId}/download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || 'report';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to download report');
+    }
+  };
+
   const renderEmpty = label => <p style={styles.emptyText}>No {label} yet.</p>;
 
   return (
@@ -57,7 +89,12 @@ const MedicalRecords = () => {
           </section>
 
           <section style={styles.section}>
-            <h3>Prescriptions</h3>
+            <div style={styles.sectionHeader}>
+              <h3>Prescriptions</h3>
+              {records.prescriptions.length > 0 && (
+                <button style={styles.downloadBtn} onClick={downloadPrescriptions}>⬇ Download All as PDF</button>
+              )}
+            </div>
             {records.prescriptions.length === 0 ? renderEmpty('prescriptions') : records.prescriptions.map(item => (
               <div key={item._id || `${item.medication}-${item.date}`} style={styles.item}>
                 <strong>{item.medication}</strong>
@@ -75,9 +112,14 @@ const MedicalRecords = () => {
                 <strong>{report.originalName || report.filename}</strong>
                 <p>{report.description || 'No description'}</p>
                 <small>{report.uploadDate ? new Date(report.uploadDate).toLocaleDateString() : 'Upload date not recorded'}</small>
-                {report._id && (
-                  <button style={styles.deleteBtn} onClick={() => deleteReport(report._id)}>Delete Report</button>
-                )}
+                <div style={styles.itemActions}>
+                  {report._id && (
+                    <button style={styles.downloadBtn} onClick={() => downloadReport(report._id, report.originalName || report.filename)}>⬇ Download</button>
+                  )}
+                  {report._id && (
+                    <button style={styles.deleteBtn} onClick={() => deleteReport(report._id)}>Delete Report</button>
+                  )}
+                </div>
               </div>
             ))}
           </section>
@@ -91,9 +133,12 @@ const styles = {
   container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   section: { background: 'white', padding: '24px', borderRadius: '8px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' },
   item: { border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', marginTop: '12px' },
+  itemActions: { display: 'flex', gap: '10px', marginTop: '12px' },
   emptyText: { color: '#718096' },
-  deleteBtn: { display: 'block', marginTop: '12px', padding: '8px 14px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  downloadBtn: { padding: '8px 14px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' },
+  deleteBtn: { padding: '8px 14px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
   backBtn: { padding: '8px 16px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }
 };
 
