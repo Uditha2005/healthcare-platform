@@ -19,13 +19,22 @@ services:
     depends_on:
       - mongo
       - doctor-service
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
 
   # Patient Service
   patient-service:
     build: ./services/patient-service
     environment:
       MONGO_URI: ${MONGO_URI}
-      JWT_SECRET: your-jwt-secret
+      JWT_SECRET: your_super_secret_jwt_key_2024
       PORT: 3002
     depends_on:
       - mongo
@@ -37,7 +46,7 @@ services:
     build: ./services/appointment-service
     environment:
       MONGO_URI: ${MONGO_URI}
-      JWT_SECRET: your-jwt-secret
+      JWT_SECRET: your_super_secret_jwt_key_2024
       DOCTOR_SERVICE_URL: http://doctor-service:5002
       PORT: 3003
     depends_on:
@@ -50,7 +59,7 @@ services:
     build: ./services/payment-service
     environment:
       MONGO_URI: ${MONGO_URI}
-      JWT_SECRET: your-jwt-secret
+      JWT_SECRET: your_super_secret_jwt_key_2024
       STRIPE_SECRET_KEY: sk_test_your_key
       STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret
       PORT: 3004
@@ -66,7 +75,7 @@ services:
       - ./services/notification-service/.env
     environment:
       MONGO_URI: ${MONGO_URI}
-      JWT_SECRET: your-jwt-secret
+      JWT_SECRET: your_super_secret_jwt_key_2024
       PORT: 3005
     depends_on:
       - mongo
@@ -79,7 +88,7 @@ services:
     env_file:
       - ./services/ai-symptom-service/.env
     environment:
-      JWT_SECRET: your-jwt-secret
+      JWT_SECRET: your_super_secret_jwt_key_2024
       PORT: 3006
     ports:
       - "3006:3006"

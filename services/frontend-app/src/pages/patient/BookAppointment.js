@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import API from '../../services/api';
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -27,7 +28,6 @@ const BookAppointment = () => {
     doctorId: doctor?._id || doctor?.id || '',
     specialty: doctor?.specialization || doctor?.specialty || ''
   });
-  const [loading, setLoading] = useState(false);
   const [availability, setAvailability] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
 
@@ -52,7 +52,7 @@ const BookAppointment = () => {
     if (!slots.includes(form.time)) {
       setForm(f => ({ ...f, time: '' }));
     }
-  }, [form.date, availability]);
+  }, [form.date, form.time, availability]);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
