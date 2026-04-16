@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const notificationLogSchema = new mongoose.Schema({
   eventType: {
     type: String,
-    enum: ['appointment_booked', 'consultation_completed', 'custom'],
+    enum: ['appointment_booked', 'consultation_completed', 'payment_confirmed', 'custom'],
     default: 'custom'
   },
   recipient: {

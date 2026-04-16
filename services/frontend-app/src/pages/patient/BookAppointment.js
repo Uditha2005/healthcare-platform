@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import API from '../../services/api';
 import { toast } from 'react-toastify';
 
 const BookAppointment = () => {
@@ -14,29 +13,30 @@ const BookAppointment = () => {
     doctorId: doctor?._id || doctor?.id || '',
     specialty: doctor?.specialization || doctor?.specialty || ''
   });
-  const [loading, setLoading] = useState(false);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const payload = {
-        doctorId: form.doctorId,
-        specialty: form.specialty,
-        date: new Date(form.date).toISOString(),
-        time: form.time,
-        notes: form.notes
-      };
-      await API.post('/appointment', payload);
-      toast.success('Appointment booked successfully!');
-      navigate('/patient/dashboard');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Booking failed');
-    } finally {
-      setLoading(false);
+    if (!form.date || !form.time || !form.doctorId) {
+      toast.error('Please complete all required fields');
+      return;
     }
+
+    const payload = {
+      doctorId: form.doctorId,
+      specialty: form.specialty,
+      date: new Date(form.date).toISOString(),
+      time: form.time,
+      notes: form.notes
+    };
+
+    navigate('/patient/payment', {
+      state: {
+        appointmentPayload: payload,
+        doctor
+      }
+    });
   };
 
   return (
@@ -58,8 +58,8 @@ const BookAppointment = () => {
           <input style={styles.input} type="time" name="time" value={form.time} onChange={handleChange} required />
           <label style={styles.label}>Notes</label>
           <textarea style={styles.textarea} name="notes" placeholder="Additional notes for the doctor..." value={form.notes} onChange={handleChange} />
-          <button style={styles.btn} type="submit" disabled={loading}>
-            {loading ? 'Booking...' : 'Confirm Appointment'}
+          <button style={styles.btn} type="submit">
+            Confirm Appointment
           </button>
         </form>
       </div>

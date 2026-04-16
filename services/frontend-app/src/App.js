@@ -16,6 +16,7 @@ import VideoConsultation from './pages/patient/VideoConsultation';
 import PatientProfile from './pages/patient/Profile';
 import PatientAppointments from './pages/patient/MyAppointments';
 import PatientMedicalRecords from './pages/patient/MedicalRecords';
+import Payment from './pages/patient/Payment';
 
 // Doctor
 import DoctorDashboard from './pages/doctor/Dashboard';
@@ -50,6 +51,7 @@ const App = () => {
           <Route path="/patient/dashboard" element={<ProtectedRoute role="patient"><PatientDashboard /></ProtectedRoute>} />
           <Route path="/patient/browse-doctors" element={<ProtectedRoute role="patient"><BrowseDoctors /></ProtectedRoute>} />
           <Route path="/patient/book-appointment" element={<ProtectedRoute role="patient"><BookAppointment /></ProtectedRoute>} />
+          <Route path="/patient/payment" element={<ProtectedRoute role="patient"><Payment /></ProtectedRoute>} />
           <Route path="/patient/profile" element={<ProtectedRoute role="patient"><PatientProfile /></ProtectedRoute>} />
           <Route path="/patient/appointments" element={<ProtectedRoute role="patient"><PatientAppointments /></ProtectedRoute>} />
           <Route path="/patient/medical-records" element={<ProtectedRoute role="patient"><PatientMedicalRecords /></ProtectedRoute>} />

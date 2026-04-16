@@ -1,7 +1,13 @@
 const Stripe = require('stripe');
 const Payment = require('../models/Payment');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeKeyConfigured = Boolean(
+  stripeSecretKey &&
+  stripeSecretKey.trim() &&
+  !stripeSecretKey.includes('your_key')
+);
+const stripe = stripeKeyConfigured ? new Stripe(stripeSecretKey) : null;
 
 const toMinorUnits = (amount) => Math.round(Number(amount) * 100);
 
@@ -15,6 +21,37 @@ exports.createPayment = async (req, res) => {
 
     if (Number(amount) <= 0) {
       return res.status(400).json({ message: 'Amount must be greater than 0' });
+    }
+
+    if (!stripe) {
+      const mockIntentId = `mock_pi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const payment = await Payment.create({
+        appointmentId,
+        patientId: req.user.id,
+        doctorId,
+        amount: Number(amount),
+        currency: currency.toLowerCase(),
+        status: 'succeeded',
+        stripePaymentIntentId: mockIntentId,
+        metadata: {
+          appointmentId,
+          patientId: req.user.id,
+          doctorId,
+          mode: 'dev-no-stripe'
+        }
+      });
+
+      return res.status(201).json({
+        message: 'Payment recorded in development mode (Stripe not configured)',
+        payment: {
+          id: payment._id,
+          status: payment.status,
+          amount: payment.amount,
+          currency: payment.currency,
+          stripePaymentIntentId: payment.stripePaymentIntentId,
+          clientSecret: null
+        }
+      });
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -64,6 +101,21 @@ exports.getPaymentStatus = async (req, res) => {
 
     if (!paymentIntentId) {
       return res.status(400).json({ message: 'paymentIntentId is required' });
+    }
+
+    if (!stripe) {
+      const payment = await Payment.findOne({ stripePaymentIntentId: paymentIntentId });
+      if (!payment) {
+        return res.status(404).json({ message: 'Payment not found' });
+      }
+
+      return res.status(200).json({
+        paymentIntentId,
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency,
+        localRecord: payment
+      });
     }
 
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);

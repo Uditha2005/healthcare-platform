@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AISymptomChatWidget from '../../components/patient/AISymptomChatWidget';
 
 const PatientDashboard = () => {
   const { user, logout } = useAuth();
@@ -50,6 +51,7 @@ const PatientDashboard = () => {
           <button style={styles.btn} onClick={() => navigate('/patient/video-consultation')}>Join Session</button>
         </div>
       </div>
+      <AISymptomChatWidget />
     </div>
   );
 };

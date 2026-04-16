@@ -2,6 +2,7 @@ const Appointment = require('../models/Appointment');
 const axios = require('axios');
 
 const DOCTOR_SERVICE_URL = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
 
 // GET /appointments
 exports.getAppointments = async (req, res) => {
@@ -233,12 +234,49 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (appointment.status === 'cancelled' || appointment.status === 'completed') {
       return res.status(400).json({ message: `Cannot change status of a ${appointment.status} appointment` });
     }
-    if (req.user.role === 'patient' && status !== 'cancelled') {
-      return res.status(403).json({ message: 'Patients can only cancel appointments' });
+    if (req.user.role === 'patient') {
+      const allowedPatientStatuses = ['cancelled', 'confirmed'];
+      if (!allowedPatientStatuses.includes(status)) {
+        return res.status(403).json({ message: 'Patients can only set status to cancelled or confirmed' });
+      }
+
+      // Patients can confirm only from pending state (e.g., after successful payment)
+      if (status === 'confirmed' && appointment.status !== 'pending') {
+        return res.status(400).json({ message: 'Only pending appointments can be confirmed' });
+      }
     }
 
     appointment.status = status;
     await appointment.save();
+
+    if (status === 'confirmed' && req.user?.email) {
+      const authHeader = req.headers.authorization;
+      const appointmentDate = appointment.date ? new Date(appointment.date).toLocaleDateString('en-CA') : 'N/A';
+      const appointmentTime = appointment.time || 'N/A';
+
+      // Notification failures should not block appointment confirmation.
+      try {
+        await axios.post(
+          `${NOTIFICATION_SERVICE_URL}/api/notification/send`,
+          {
+            eventType: 'payment_confirmed',
+            recipient: { email: req.user.email },
+            subject: 'Payment Confirmed - Appointment Booked',
+            message: `Your payment has been confirmed. Appointment ${appointment._id} is booked for ${appointmentDate} at ${appointmentTime}.`,
+            booking: {
+              appointmentId: String(appointment._id),
+              date: appointmentDate,
+              time: appointmentTime,
+              specialty: appointment.specialty || 'General',
+              status: 'confirmed'
+            }
+          },
+          authHeader ? { headers: { Authorization: authHeader } } : undefined
+        );
+      } catch (notifyErr) {
+        console.error('Failed to send payment confirmation notification:', notifyErr.message);
+      }
+    }
 
     res.json({ message: `Appointment ${status}`, appointment });
   } catch (err) {
