@@ -11,7 +11,7 @@ services:
   auth-service:
     build: ./services/auth-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
       JWT_EXPIRES_IN: 1d
       PORT: 3001
@@ -24,7 +24,7 @@ services:
   patient-service:
     build: ./services/patient-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
       PORT: 3002
     depends_on:
@@ -36,7 +36,7 @@ services:
   appointment-service:
     build: ./services/appointment-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
       PORT: 3003
     depends_on:
@@ -48,7 +48,7 @@ services:
   payment-service:
     build: ./services/payment-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
       STRIPE_SECRET_KEY: sk_test_your_key
       STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret
@@ -62,7 +62,7 @@ services:
   notification-service:
     build: ./services/notification-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
       SMTP_HOST: smtp.sendgrid.net
       SMTP_PORT: 587
@@ -96,7 +96,7 @@ services:
   doctor-service:
     build: ./services/doctor-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       PORT: 5002
     depends_on:
       - mongo
@@ -107,7 +107,7 @@ services:
   telemedicine-service:
     build: ./services/telemedicine-service
     environment:
-      MONGO_URI: mongodb://mongo:27017/healthcare
+      MONGO_URI: ${MONGO_URI}
       PORT: 5003
     depends_on:
       - mongo
