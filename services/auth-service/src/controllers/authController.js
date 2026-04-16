@@ -27,6 +27,7 @@ exports.register = async (req, res) => {
     if (role === 'doctor') {
       try {
         await axios.post(`${DOCTOR_SERVICE_URL}/api/doctors`, {
+          userId: user._id,
           name,
           email,
           specialization: specialization || 'General',
@@ -35,6 +36,9 @@ exports.register = async (req, res) => {
         });
       } catch (syncErr) {
         console.error('Doctor profile sync failed:', syncErr.message);
+        // Clean up: remove the user if doctor profile creation fails
+        await User.findByIdAndDelete(user._id);
+        return res.status(500).json({ message: 'Failed to create doctor profile. Please try again.' });
       }
     }
 

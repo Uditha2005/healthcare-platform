@@ -3,6 +3,25 @@ const axios = require('axios');
 
 const DOCTOR_SERVICE_URL = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
 
+// Helper: resolve auth userId to doctor-service _id
+async function getDoctorIdFromUserId(userId, email) {
+  try {
+    const res = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/user/${userId}`);
+    return res.data._id;
+  } catch {
+    // Fallback: try email lookup for doctors registered before userId was added
+    if (email) {
+      try {
+        const res = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/email/${encodeURIComponent(email)}`);
+        return res.data._id;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
 // GET /appointments
 exports.getAppointments = async (req, res) => {
   try {
@@ -10,7 +29,13 @@ exports.getAppointments = async (req, res) => {
     if (req.user.role === 'patient') {
       query.patientId = req.user.id;
     } else if (req.user.role === 'doctor') {
-      query.doctorId = req.user.id;
+      // Resolve auth userId to doctor-service _id
+      const doctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!doctorId) {
+        console.error('Could not resolve doctor ID for user:', req.user.id);
+        return res.json([]);
+      }
+      query.doctorId = doctorId;
     }
     // Admin can see all
 
@@ -35,10 +60,11 @@ exports.getAppointmentById = async (req, res) => {
     ) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (
-      req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id
-    ) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const doctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!doctorId || appointment.doctorId.toString() !== doctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     res.json(appointment);
@@ -130,8 +156,11 @@ exports.updateAppointment = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Prevent modifying cancelled/completed appointments
@@ -225,8 +254,11 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Status transition rules
@@ -260,8 +292,11 @@ exports.deleteAppointment = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Soft delete - set status to cancelled instead of removing

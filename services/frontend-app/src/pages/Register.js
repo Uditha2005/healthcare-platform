@@ -4,7 +4,7 @@ import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Register = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'patient' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'patient', specialization: '', experience: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -68,6 +68,28 @@ const Register = () => {
             <option value="doctor">Doctor</option>
             <option value="admin">Admin</option>
           </select>
+          {form.role === 'doctor' && (
+            <>
+              <input
+                style={styles.input}
+                type="text"
+                name="specialization"
+                placeholder="Specialization (e.g. Cardiology)"
+                value={form.specialization}
+                onChange={handleChange}
+                required
+              />
+              <input
+                style={styles.input}
+                type="number"
+                name="experience"
+                placeholder="Years of Experience"
+                value={form.experience}
+                onChange={handleChange}
+                required
+              />
+            </>
+          )}
           <button style={styles.button} type="submit" disabled={loading}>
             {loading ? 'Registering...' : 'Register'}
           </button>
