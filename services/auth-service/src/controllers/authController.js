@@ -78,3 +78,23 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// GET /api/auth/verify
+exports.verifyToken = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ valid: false, message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ valid: false, message: 'User not found' });
+    }
+
+    res.status(200).json({ valid: true, user });
+  } catch (err) {
+    res.status(401).json({ valid: false, message: 'Invalid or expired token' });
+  }
+};
