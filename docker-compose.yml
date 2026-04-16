@@ -17,6 +17,12 @@ services:
       PORT: 3001
     depends_on:
       - mongo
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     ports:
       - "3001:3001"
     restart: unless-stopped
@@ -38,6 +44,7 @@ services:
     environment:
       MONGO_URI: ${MONGO_URI}
       JWT_SECRET: your-jwt-secret
+      DOCTOR_SERVICE_URL: http://doctor-service:5002
       PORT: 3003
     depends_on:
       - mongo
@@ -127,13 +134,26 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:3004
       AI_SERVICE_URL: http://ai-symptom-service:3006
     depends_on:
-      - auth-service
-      - patient-service
-      - appointment-service
-      - doctor-service
-      - telemedicine-service
-      - payment-service
-      - ai-symptom-service
+      auth-service:
+        condition: service_healthy
+      patient-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+      telemedicine-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      ai-symptom-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -144,7 +164,8 @@ services:
       PORT: 3007
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
     ports:
       - "3007:3007"
     restart: unless-stopped
