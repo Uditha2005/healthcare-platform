@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # Auth Service
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=your_super_secret_jwt_key_2024
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mongo
+
+  # Patient Service
+  patient-service:
+    build: ./services/patient-service
+    container_name: patient-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=your_super_secret_jwt_key_2024
+    depends_on:
+      - mongo
+    volumes:
+      - ./services/patient-service/uploads:/app/uploads
+
+  # Appointment Service
+  appointment-service:
+    build: ./services/appointment-service
+    container_name: appointment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=your_super_secret_jwt_key_2024
+      - DOCTOR_SERVICE_URL=http://doctor-service:5002
+    depends_on:
+      - mongo
+      - doctor-service
+
+  # Doctor Service
+  doctor-service:
+    build: ./services/doctor-service
+    container_name: doctor-service
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      - mongo
+
+  # Payment Service
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=supersecretkey
+      - STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_TEST_KEY
+    depends_on:
+      - mongo
+
+  # Notification Service
+  notification-service:
+    build: ./services/notification-service
+    container_name: notification-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      - mongo
+
+  # Telemedicine Service
+  telemedicine-service:
+    build: ./services/telemedicine-service
+    container_name: telemedicine-service
+    ports:
+      - "5003:5003"
+    environment:
+      - PORT=5003
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      - mongo
+
+  # AI Symptom Service
+  ai-symptom-service:
+    build: ./services/ai-symptom-service
+    container_name: ai-symptom-service
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - JWT_SECRET=supersecretkey
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - PATIENT_SERVICE_URL=http://patient-service:3002
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:3003
+      - DOCTOR_SERVICE_URL=http://doctor-service:5002
+      - TELEMEDICINE_SERVICE_URL=http://telemedicine-service:5003
+    depends_on:
+      - auth-service
+      - patient-service
+      - appointment-service
+
+  # Frontend
+  frontend:
+    build: ./services/frontend-app
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - REACT_APP_API_URL=http://localhost:4000
+    depends_on:
+      - api-gateway
+
+  # MongoDB (Local - Optional if using MongoDB Atlas)
+  mongo:
+    image: mongo:7.0
+    container_name: healthcare-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+
+volumes:
+  mongo-data:

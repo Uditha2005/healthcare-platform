@@ -20,14 +20,24 @@ const PatientDashboard = () => {
       </div>
       <div style={styles.grid}>
         <div style={styles.card}>
+          <h3>Profile</h3>
+          <p>Keep your contact and emergency details current</p>
+          <button style={styles.btn} onClick={() => navigate('/patient/profile')}>Edit Profile</button>
+        </div>
+        <div style={styles.card}>
           <h3>📅 My Appointments</h3>
           <p>View and manage your appointments</p>
-          <button style={styles.btn} onClick={() => navigate('/patient/browse-doctors')}>Book Appointment</button>
+          <button style={styles.btn} onClick={() => navigate('/patient/appointments')}>Manage Appointments</button>
         </div>
         <div style={styles.card}>
           <h3>👨‍⚕️ Find Doctors</h3>
           <p>Browse and book doctors</p>
           <button style={styles.btn} onClick={() => navigate('/patient/browse-doctors')}>Browse Doctors</button>
+        </div>
+        <div style={styles.card}>
+          <h3>Medical Records</h3>
+          <p>View prescriptions, reports, and medical history</p>
+          <button style={styles.btn} onClick={() => navigate('/patient/medical-records')}>View Records</button>
         </div>
         <div style={styles.card}>
           <h3>📋 Upload Reports</h3>

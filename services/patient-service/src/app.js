@@ -14,10 +14,12 @@ app.use(cors());
 app.use(express.json());
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Routes
 app.use('/api/patient', patientRoutes);
+app.use('/patient', patientRoutes);
+app.use('/', patientRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

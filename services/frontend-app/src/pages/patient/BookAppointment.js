@@ -7,7 +7,13 @@ const BookAppointment = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const doctor = location.state?.doctor || null;
-  const [form, setForm] = useState({ date: '', time: '', reason: '', doctorId: doctor?._id || '' });
+  const [form, setForm] = useState({ 
+    date: '', 
+    time: '', 
+    notes: '', 
+    doctorId: doctor?._id || doctor?.id || '',
+    specialty: doctor?.specialization || doctor?.specialty || ''
+  });
   const [loading, setLoading] = useState(false);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,7 +22,14 @@ const BookAppointment = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await API.post('/appointment/appointments', form);
+      const payload = {
+        doctorId: form.doctorId,
+        specialty: form.specialty,
+        date: new Date(form.date).toISOString(),
+        time: form.time,
+        notes: form.notes
+      };
+      await API.post('/appointment', payload);
       toast.success('Appointment booked successfully!');
       navigate('/patient/dashboard');
     } catch (err) {
@@ -33,14 +46,18 @@ const BookAppointment = () => {
           <h2>📅 Book Appointment</h2>
           <button style={styles.backBtn} onClick={() => navigate(-1)}>← Back</button>
         </div>
-        {doctor && <div style={styles.doctorInfo}><p>👨‍⚕️ Dr. {doctor.name} — {doctor.specialty}</p></div>}
+        {doctor && (
+          <div style={styles.doctorInfo}>
+            <p>Dr. {doctor.name} - {doctor.specialization || doctor.specialty || 'General'}</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <label style={styles.label}>Date</label>
           <input style={styles.input} type="date" name="date" value={form.date} onChange={handleChange} required />
           <label style={styles.label}>Time</label>
           <input style={styles.input} type="time" name="time" value={form.time} onChange={handleChange} required />
-          <label style={styles.label}>Reason</label>
-          <textarea style={styles.textarea} name="reason" placeholder="Describe your symptoms..." value={form.reason} onChange={handleChange} required />
+          <label style={styles.label}>Notes</label>
+          <textarea style={styles.textarea} name="notes" placeholder="Additional notes for the doctor..." value={form.notes} onChange={handleChange} />
           <button style={styles.btn} type="submit" disabled={loading}>
             {loading ? 'Booking...' : 'Confirm Appointment'}
           </button>

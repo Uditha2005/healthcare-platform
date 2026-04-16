@@ -9,23 +9,26 @@ const ViewAppointments = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('/appointment/appointments/doctor')
-      .then(res => setAppointments(res.data.appointments || []))
-      .catch(() => setAppointments([]))
+    API.get('/appointment')
+      .then(res => setAppointments(res.data || []))
+      .catch(err => {
+        console.error('Error fetching appointments:', err);
+        setAppointments([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const updateStatus = async (id, status) => {
     try {
-      await API.put(`/appointment/appointments/${id}`, { status });
+      await API.patch(`/appointment/${id}/status`, { status });
       toast.success(`Appointment ${status}!`);
       setAppointments(appointments.map(a => a._id === id ? { ...a, status } : a));
     } catch (err) {
-      toast.error('Failed to update');
+      toast.error(err.response?.data?.message || 'Failed to update');
     }
   };
 
-  const statusColor = { pending: '#d69e2e', confirmed: '#38a169', cancelled: '#e53e3e' };
+  const statusColor = { pending: '#d69e2e', confirmed: '#38a169', cancelled: '#e53e3e', completed: '#3182ce' };
 
   return (
     <div style={styles.container}>
@@ -38,11 +41,11 @@ const ViewAppointments = () => {
       ) : (
         <div style={styles.grid}>
           {appointments.map((apt, i) => (
-            <div key={i} style={styles.card}>
-              <h3>👤 {apt.patientName || 'Patient'}</h3>
+            <div key={apt._id || i} style={styles.card}>
+              <h3>👤 Patient</h3>
               <p>📅 {new Date(apt.date).toLocaleDateString()}</p>
               <p>🕐 {apt.time}</p>
-              <p>📝 {apt.reason}</p>
+              <p>📝 {apt.notes || apt.reason || 'No notes'}</p>
               <p style={{ color: statusColor[apt.status] }}>● {apt.status?.toUpperCase()}</p>
               {apt.status === 'pending' && (
                 <div style={styles.actions}>
