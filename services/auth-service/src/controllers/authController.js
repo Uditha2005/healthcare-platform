@@ -22,7 +22,6 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const { specialization, experience } = req.body;
     const user = await User.create({ name, email, password, role });
 
     if (role === 'doctor') {
@@ -40,21 +39,6 @@ exports.register = async (req, res) => {
     }
 
     const token = generateToken(user);
-
-    // If registering as a doctor, also create a Doctor profile in the doctor-service
-    if (role === 'doctor') {
-      try {
-        await axios.post(`${DOCTOR_SERVICE_URL}/api/doctors`, {
-          name,
-          email,
-          specialization: specialization || 'General',
-          experience: experience || 0,
-          availability: []
-        });
-      } catch (err) {
-        console.error('Failed to create doctor profile in doctor-service:', err.message);
-      }
-    }
 
     res.status(201).json({
       message: 'Registration successful',
