@@ -93,17 +93,25 @@ exports.createAppointment = async (req, res) => {
 
       // Check if doctor has the requested time slot available
       if (doctor.availability && doctor.availability.length > 0) {
-        const requestedDate = new Date(date).toISOString().split('T')[0];
-        const dayAvailability = doctor.availability.find(a => a.date === requestedDate);
+        const requestedDate = new Date(date);
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const requestedDay = days[requestedDate.getDay()];
 
-        if (!dayAvailability) {
+        const daySlots = doctor.availability.filter(a => a.day === requestedDay);
+
+        if (daySlots.length === 0) {
           return res.status(400).json({ message: 'Doctor is not available on the selected date' });
         }
 
-        if (!dayAvailability.timeSlots.includes(time)) {
+        // Check if the requested time falls within any of the doctor's slots for that day
+        const isWithinSlot = daySlots.some(slot => {
+          return time >= slot.startTime && time < slot.endTime;
+        });
+
+        if (!isWithinSlot) {
           return res.status(400).json({
             message: 'Doctor is not available at the selected time',
-            availableSlots: dayAvailability.timeSlots
+            availableSlots: daySlots.map(s => `${s.startTime} - ${s.endTime}`)
           });
         }
       }
@@ -179,16 +187,24 @@ exports.updateAppointment = async (req, res) => {
         const doctor = doctorRes.data;
 
         if (doctor.availability && doctor.availability.length > 0) {
-          const requestedDate = new Date(newDate).toISOString().split('T')[0];
-          const dayAvailability = doctor.availability.find(a => a.date === requestedDate);
+          const rescheduledDate = new Date(newDate);
+          const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const rescheduledDay = days[rescheduledDate.getDay()];
 
-          if (!dayAvailability) {
+          const daySlots = doctor.availability.filter(a => a.day === rescheduledDay);
+
+          if (daySlots.length === 0) {
             return res.status(400).json({ message: 'Doctor is not available on the new date' });
           }
-          if (!dayAvailability.timeSlots.includes(newTime)) {
+
+          const isWithinSlot = daySlots.some(slot => {
+            return newTime >= slot.startTime && newTime < slot.endTime;
+          });
+
+          if (!isWithinSlot) {
             return res.status(400).json({
               message: 'Doctor is not available at the new time',
-              availableSlots: dayAvailability.timeSlots
+              availableSlots: daySlots.map(s => `${s.startTime} - ${s.endTime}`)
             });
           }
         }

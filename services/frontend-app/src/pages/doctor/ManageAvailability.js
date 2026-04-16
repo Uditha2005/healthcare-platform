@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 
 const ManageAvailability = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [slots, setSlots] = useState([{ day: 'Monday', startTime: '09:00', endTime: '17:00' }]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      API.get(`/doctors/user/${user.id}`)
+        .then(res => {
+          if (res.data.availability && res.data.availability.length > 0) {
+            setSlots(res.data.availability);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setFetching(false));
+    } else {
+      setFetching(false);
+    }
+  }, [user]);
 
   const addSlot = () => setSlots([...slots, { day: 'Monday', startTime: '09:00', endTime: '17:00' }]);
   const removeSlot = (i) => setSlots(slots.filter((_, idx) => idx !== i));
@@ -20,7 +38,7 @@ const ManageAvailability = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await API.post('/doctor/availability', { availability: slots });
+      await API.put(`/doctors/user/${user.id}/availability`, { availability: slots });
       toast.success('Availability updated!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update');
@@ -38,6 +56,7 @@ const ManageAvailability = () => {
         <button style={styles.backBtn} onClick={() => navigate('/doctor/dashboard')}>← Back</button>
       </div>
       <div style={styles.card}>
+        {fetching ? <p>Loading availability...</p> : (
         <form onSubmit={handleSubmit}>
           {slots.map((slot, i) => (
             <div key={i} style={styles.slotRow}>
@@ -55,6 +74,7 @@ const ManageAvailability = () => {
             {loading ? 'Saving...' : '💾 Save Availability'}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

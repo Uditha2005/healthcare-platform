@@ -1,7 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const generateTimeSlots = (startTime, endTime) => {
+  const slots = [];
+  let [h, m] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  while (h < eh || (h === eh && m < em)) {
+    slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+    m += 30;
+    if (m >= 60) { h++; m = 0; }
+  }
+  return slots;
+};
 
 const BookAppointment = () => {
   const navigate = useNavigate();
@@ -15,11 +29,40 @@ const BookAppointment = () => {
     specialty: doctor?.specialization || doctor?.specialty || ''
   });
   const [loading, setLoading] = useState(false);
+  const [availability, setAvailability] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+
+  useEffect(() => {
+    if (doctor?._id || doctor?.id) {
+      const docId = doctor._id || doctor.id;
+      API.get(`/doctors/${docId}/availability`)
+        .then(res => setAvailability(res.data.availability || []))
+        .catch(() => setAvailability([]));
+    }
+  }, [doctor]);
+
+  useEffect(() => {
+    if (!form.date || availability.length === 0) {
+      setAvailableSlots([]);
+      return;
+    }
+    const selectedDay = DAYS[new Date(form.date).getDay()];
+    const daySlots = availability.filter(a => a.day === selectedDay);
+    const slots = daySlots.flatMap(s => generateTimeSlots(s.startTime, s.endTime));
+    setAvailableSlots(slots);
+    if (!slots.includes(form.time)) {
+      setForm(f => ({ ...f, time: '' }));
+    }
+  }, [form.date, availability]);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!form.time) {
+      toast.error('Please select an available time slot');
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -53,12 +96,26 @@ const BookAppointment = () => {
         )}
         <form onSubmit={handleSubmit}>
           <label style={styles.label}>Date</label>
-          <input style={styles.input} type="date" name="date" value={form.date} onChange={handleChange} required />
-          <label style={styles.label}>Time</label>
-          <input style={styles.input} type="time" name="time" value={form.time} onChange={handleChange} required />
+          <input style={styles.input} type="date" name="date" value={form.date} onChange={handleChange} required min={new Date().toISOString().split('T')[0]} />
+          {form.date && availableSlots.length === 0 && (
+            <p style={{ color: '#e53e3e', marginBottom: '12px' }}>No available slots on this date. Please pick another day.</p>
+          )}
+          <label style={styles.label}>Time Slot</label>
+          {availableSlots.length > 0 ? (
+            <select style={styles.input} name="time" value={form.time} onChange={handleChange} required>
+              <option value="">Select a time slot</option>
+              {availableSlots.map(slot => (
+                <option key={slot} value={slot}>{slot}</option>
+              ))}
+            </select>
+          ) : (
+            <select style={styles.input} disabled>
+              <option>{form.date ? 'No slots available' : 'Select a date first'}</option>
+            </select>
+          )}
           <label style={styles.label}>Notes</label>
           <textarea style={styles.textarea} name="notes" placeholder="Additional notes for the doctor..." value={form.notes} onChange={handleChange} />
-          <button style={styles.btn} type="submit" disabled={loading}>
+          <button style={styles.btn} type="submit" disabled={loading || !form.time}>
             {loading ? 'Booking...' : 'Confirm Appointment'}
           </button>
         </form>

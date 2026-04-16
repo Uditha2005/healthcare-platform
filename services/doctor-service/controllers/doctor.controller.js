@@ -80,6 +80,43 @@ exports.getDoctorByEmail = async (req, res) => {
   }
 };
 
+// UPDATE doctor availability by userId
+exports.updateAvailability = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { availability } = req.body;
+
+    if (!availability || !Array.isArray(availability)) {
+      return res.status(400).json({ message: "availability array is required" });
+    }
+
+    const doctor = await Doctor.findOne({ userId });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    doctor.availability = availability;
+    await doctor.save();
+
+    res.status(200).json({ message: "Availability updated", availability: doctor.availability });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET doctor availability by doctor _id
+exports.getAvailability = async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    res.status(200).json({ availability: doctor.availability || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // DELETE doctor
 exports.deleteDoctor = async (req, res) => {
   try {
