@@ -65,7 +65,7 @@ const Dashboard = () => {
         <div style={styles.card}>
           <h3>💊 Prescriptions</h3>
           <p>Issue digital prescriptions</p>
-          <button style={styles.btn}>
+          <button style={styles.btn} onClick={() => navigate('/doctor/consultation')}>
             Write Prescription
           </button>
         </div>
