@@ -1,0 +1,153 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: healthcare-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  auth-service:
+    build: ./services/auth-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      JWT_SECRET: your-jwt-secret
+      JWT_EXPIRES_IN: 1d
+      PORT: 3001
+    depends_on:
+      - mongo
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  patient-service:
+    build: ./services/patient-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      JWT_SECRET: your-jwt-secret
+      PORT: 3002
+    depends_on:
+      - mongo
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
+  appointment-service:
+    build: ./services/appointment-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      JWT_SECRET: your-jwt-secret
+      PORT: 3003
+    depends_on:
+      - mongo
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  payment-service:
+    build: ./services/payment-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      JWT_SECRET: your-jwt-secret
+      STRIPE_SECRET_KEY: sk_test_your_key
+      STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret
+      PORT: 3004
+    depends_on:
+      - mongo
+    ports:
+      - "3004:3004"
+    restart: unless-stopped
+
+  notification-service:
+    build: ./services/notification-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      JWT_SECRET: your-jwt-secret
+      SMTP_HOST: smtp.sendgrid.net
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+      SMTP_USER: apikey
+      SMTP_PASS: your-sendgrid-api-key
+      SMTP_FROM: noreply@yourdomain.com
+      NOTIFYLK_USER_ID: "31493"
+      NOTIFYLK_API_KEY: your-notifylk-api-key
+      NOTIFYLK_SENDER_ID: NotifyDEMO
+      NOTIFYLK_API_BASE_URL: https://app.notify.lk/api/v1
+      PORT: 3005
+    depends_on:
+      - mongo
+    ports:
+      - "3005:3005"
+    restart: unless-stopped
+
+  ai-symptom-service:
+    build: ./services/ai-symptom-service
+    environment:
+      JWT_SECRET: your-jwt-secret
+      GEMINI_API_KEY: your-gemini-api-key
+      GEMINI_MODEL: gemini-2.5-flash
+      GEMINI_BASE_URL: https://generativelanguage.googleapis.com/v1beta
+      PORT: 3006
+    ports:
+      - "3006:3006"
+    restart: unless-stopped
+
+  doctor-service:
+    build: ./services/doctor-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      PORT: 5002
+    depends_on:
+      - mongo
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+  telemedicine-service:
+    build: ./services/telemedicine-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/healthcare
+      PORT: 5003
+    depends_on:
+      - mongo
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./services/api-gateway
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PATIENT_SERVICE_URL: http://patient-service:3002
+      APPOINTMENT_SERVICE_URL: http://appointment-service:3003
+      DOCTOR_SERVICE_URL: http://doctor-service:5002
+      TELEMEDICINE_SERVICE_URL: http://telemedicine-service:5003
+      PAYMENT_SERVICE_URL: http://payment-service:3004
+      AI_SERVICE_URL: http://ai-symptom-service:3006
+    depends_on:
+      - auth-service
+      - patient-service
+      - appointment-service
+      - doctor-service
+      - telemedicine-service
+      - payment-service
+      - ai-symptom-service
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend-app:
+    build: ./services/frontend-app
+    environment:
+      PORT: 3007
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - api-gateway
+    ports:
+      - "3007:3007"
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

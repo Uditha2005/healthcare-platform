@@ -53,6 +53,16 @@ app.use('/api/appointment', createProxyMiddleware({
   changeOrigin: true,
 }));
 
+app.use('/api/payment', createProxyMiddleware({
+  target: process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004',
+  changeOrigin: true,
+}));
+
+app.use('/api/ai', createProxyMiddleware({
+  target: process.env.AI_SERVICE_URL || 'http://localhost:3006',
+  changeOrigin: true,
+}));
+
 // Start server
 const PORT = process.env.PORT || 3000;
 
