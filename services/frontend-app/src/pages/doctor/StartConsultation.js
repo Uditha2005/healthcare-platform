@@ -6,14 +6,15 @@ import { toast } from 'react-toastify';
 const StartConsultation = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
-  const [prescription, setPrescription] = useState({ patientId: '', medicine: '', dosage: '', notes: '' });
+  const [prescription, setPrescription] = useState({ patientId: '', medication: '', dosage: '', instructions: '' });
   const [loading, setLoading] = useState(true);
   const [showPrescription, setShowPrescription] = useState(false);
 
   useEffect(() => {
-    API.get('/appointment/appointments/doctor')
+    API.get('/appointment')
       .then(res => {
-        const confirmed = (res.data.appointments || []).filter(a => a.status === 'confirmed');
+        const data = res.data.appointments || res.data || [];
+        const confirmed = data.filter(a => a.status === 'confirmed');
         setAppointments(confirmed);
       })
       .catch(() => setAppointments([]))
@@ -23,12 +24,12 @@ const StartConsultation = () => {
   const handlePrescription = async e => {
     e.preventDefault();
     try {
-      await API.post('/doctor/prescription', prescription);
+      await API.post('/patient/prescriptions', prescription);
       toast.success('Prescription issued!');
       setShowPrescription(false);
-      setPrescription({ patientId: '', medicine: '', dosage: '', notes: '' });
+      setPrescription({ patientId: '', medication: '', dosage: '', instructions: '' });
     } catch (err) {
-      toast.error('Failed to issue prescription');
+      toast.error(err.response?.data?.message || 'Failed to issue prescription');
     }
   };
 
@@ -65,9 +66,9 @@ const StartConsultation = () => {
           <div style={styles.modalCard}>
             <h3>💊 Issue Prescription</h3>
             <form onSubmit={handlePrescription}>
-              <input style={styles.input} placeholder="Medicine name" value={prescription.medicine} onChange={e => setPrescription({ ...prescription, medicine: e.target.value })} required />
+              <input style={styles.input} placeholder="Medicine name" value={prescription.medication} onChange={e => setPrescription({ ...prescription, medication: e.target.value })} required />
               <input style={styles.input} placeholder="Dosage (e.g. 2x daily)" value={prescription.dosage} onChange={e => setPrescription({ ...prescription, dosage: e.target.value })} required />
-              <textarea style={styles.textarea} placeholder="Additional notes..." value={prescription.notes} onChange={e => setPrescription({ ...prescription, notes: e.target.value })} />
+              <textarea style={styles.textarea} placeholder="Instructions for the patient..." value={prescription.instructions} onChange={e => setPrescription({ ...prescription, instructions: e.target.value })} />
               <div style={styles.actions}>
                 <button type="submit" style={styles.startBtn}>Issue Prescription</button>
                 <button type="button" style={styles.backBtn} onClick={() => setShowPrescription(false)}>Cancel</button>

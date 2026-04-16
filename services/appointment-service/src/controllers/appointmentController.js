@@ -1,8 +1,28 @@
 const Appointment = require('../models/Appointment');
+const User = require('../models/User');
 const axios = require('axios');
 
 const DOCTOR_SERVICE_URL = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
+
+// Helper: resolve auth userId to doctor-service _id
+async function getDoctorIdFromUserId(userId, email) {
+  try {
+    const res = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/user/${userId}`);
+    return res.data._id;
+  } catch {
+    // Fallback: try email lookup for doctors registered before userId was added
+    if (email) {
+      try {
+        const res = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/email/${encodeURIComponent(email)}`);
+        return res.data._id;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
 
 // GET /appointments
 exports.getAppointments = async (req, res) => {
@@ -11,12 +31,33 @@ exports.getAppointments = async (req, res) => {
     if (req.user.role === 'patient') {
       query.patientId = req.user.id;
     } else if (req.user.role === 'doctor') {
-      query.doctorId = req.user.id;
+      // Resolve auth userId to doctor-service _id
+      const doctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!doctorId) {
+        console.error('Could not resolve doctor ID for user:', req.user.id);
+        return res.json([]);
+      }
+      query.doctorId = doctorId;
     }
     // Admin can see all
 
     const appointments = await Appointment.find(query).sort({ date: -1 });
-    res.json(appointments);
+
+    // Enrich with patient and doctor names
+    const enriched = await Promise.all(appointments.map(async (apt) => {
+      const obj = apt.toObject();
+      try {
+        const patientUser = await User.findById(apt.patientId).select('name');
+        if (patientUser) obj.patientName = patientUser.name;
+      } catch (_) {}
+      try {
+        const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/${apt.doctorId}`);
+        if (docRes.data && docRes.data.name) obj.doctorName = docRes.data.name;
+      } catch (_) {}
+      return obj;
+    }));
+
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -36,10 +77,11 @@ exports.getAppointmentById = async (req, res) => {
     ) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (
-      req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id
-    ) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const doctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!doctorId || appointment.doctorId.toString() !== doctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     res.json(appointment);
@@ -68,17 +110,25 @@ exports.createAppointment = async (req, res) => {
 
       // Check if doctor has the requested time slot available
       if (doctor.availability && doctor.availability.length > 0) {
-        const requestedDate = new Date(date).toISOString().split('T')[0];
-        const dayAvailability = doctor.availability.find(a => a.date === requestedDate);
+        const requestedDate = new Date(date);
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const requestedDay = days[requestedDate.getDay()];
 
-        if (!dayAvailability) {
+        const daySlots = doctor.availability.filter(a => a.day === requestedDay);
+
+        if (daySlots.length === 0) {
           return res.status(400).json({ message: 'Doctor is not available on the selected date' });
         }
 
-        if (!dayAvailability.timeSlots.includes(time)) {
+        // Check if the requested time falls within any of the doctor's slots for that day
+        const isWithinSlot = daySlots.some(slot => {
+          return time >= slot.startTime && time < slot.endTime;
+        });
+
+        if (!isWithinSlot) {
           return res.status(400).json({
             message: 'Doctor is not available at the selected time',
-            availableSlots: dayAvailability.timeSlots
+            availableSlots: daySlots.map(s => `${s.startTime} - ${s.endTime}`)
           });
         }
       }
@@ -131,8 +181,11 @@ exports.updateAppointment = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Prevent modifying cancelled/completed appointments
@@ -151,16 +204,24 @@ exports.updateAppointment = async (req, res) => {
         const doctor = doctorRes.data;
 
         if (doctor.availability && doctor.availability.length > 0) {
-          const requestedDate = new Date(newDate).toISOString().split('T')[0];
-          const dayAvailability = doctor.availability.find(a => a.date === requestedDate);
+          const rescheduledDate = new Date(newDate);
+          const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const rescheduledDay = days[rescheduledDate.getDay()];
 
-          if (!dayAvailability) {
+          const daySlots = doctor.availability.filter(a => a.day === rescheduledDay);
+
+          if (daySlots.length === 0) {
             return res.status(400).json({ message: 'Doctor is not available on the new date' });
           }
-          if (!dayAvailability.timeSlots.includes(newTime)) {
+
+          const isWithinSlot = daySlots.some(slot => {
+            return newTime >= slot.startTime && newTime < slot.endTime;
+          });
+
+          if (!isWithinSlot) {
             return res.status(400).json({
               message: 'Doctor is not available at the new time',
-              availableSlots: dayAvailability.timeSlots
+              availableSlots: daySlots.map(s => `${s.startTime} - ${s.endTime}`)
             });
           }
         }
@@ -226,8 +287,11 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Status transition rules
@@ -298,8 +362,11 @@ exports.deleteAppointment = async (req, res) => {
     if (req.user.role === 'patient' && appointment.patientId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'doctor' && appointment.doctorId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    if (req.user.role === 'doctor') {
+      const resolvedDoctorId = await getDoctorIdFromUserId(req.user.id, req.user.email);
+      if (!resolvedDoctorId || appointment.doctorId.toString() !== resolvedDoctorId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Soft delete - set status to cancelled instead of removing

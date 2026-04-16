@@ -11,22 +11,16 @@ services:
   auth-service:
     build: ./services/auth-service
     environment:
-      MONGO_URI: ${MONGO_URI}
-      JWT_SECRET: your-jwt-secret
-      JWT_EXPIRES_IN: 1d
-      PORT: 3001
+      - PORT=3001
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=your_super_secret_jwt_key_2024
+      - JWT_EXPIRES_IN=7d
+      - DOCTOR_SERVICE_URL=http://doctor-service:5002
     depends_on:
       - mongo
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    ports:
-      - "3001:3001"
-    restart: unless-stopped
+      - doctor-service
 
+  # Patient Service
   patient-service:
     build: ./services/patient-service
     environment:

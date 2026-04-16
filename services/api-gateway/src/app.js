@@ -39,7 +39,7 @@ app.use('/api/sessions', createProxyMiddleware({
    Core Services
 ========================= */
 app.use('/api/auth', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL || 'http://localhost:5001',
+  target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   changeOrigin: true,
   on: {
     proxyReq: fixRequestBody,
@@ -50,37 +50,37 @@ app.use('/api/auth', createProxyMiddleware({
 }));
 
 app.use('/api/patient', createProxyMiddleware({
-  target: process.env.PATIENT_SERVICE_URL || 'http://localhost:5004',
+  target: process.env.PATIENT_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/patient', createProxyMiddleware({
-  target: process.env.PATIENT_SERVICE_URL || 'http://localhost:5004',
+  target: process.env.PATIENT_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/api/appointments', createProxyMiddleware({
-  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:5005',
+  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/api/appointment', createProxyMiddleware({
-  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:5005',
+  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/appointments', createProxyMiddleware({
-  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:5005',
+  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/appointment', createProxyMiddleware({
-  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:5005',
+  target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
   on: { proxyReq: fixRequestBody }
 }));

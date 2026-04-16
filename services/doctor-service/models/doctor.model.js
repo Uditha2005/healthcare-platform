@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 
 const doctorSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+    },
     name: {
       type: String,
       required: true,
@@ -21,8 +24,9 @@ const doctorSchema = new mongoose.Schema(
     },
     availability: [
       {
-        date: String,
-        timeSlots: [String],
+        day: String,
+        startTime: String,
+        endTime: String,
       },
     ],
   },

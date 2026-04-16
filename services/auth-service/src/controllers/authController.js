@@ -15,31 +15,34 @@ const generateToken = (user) => {
 // POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, specialization, experience } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const { specialization, experience } = req.body;
     const user = await User.create({ name, email, password, role });
-    const token = generateToken(user);
 
-    // If registering as a doctor, also create a Doctor profile in the doctor-service
     if (role === 'doctor') {
       try {
         await axios.post(`${DOCTOR_SERVICE_URL}/api/doctors`, {
+          userId: user._id,
           name,
           email,
           specialization: specialization || 'General',
-          experience: experience || 0,
+          experience: Number(experience) || 0,
           availability: []
         });
-      } catch (err) {
-        console.error('Failed to create doctor profile in doctor-service:', err.message);
+      } catch (syncErr) {
+        console.error('Doctor profile sync failed:', syncErr.message);
+        // Clean up: remove the user if doctor profile creation fails
+        await User.findByIdAndDelete(user._id);
+        return res.status(500).json({ message: 'Failed to create doctor profile. Please try again.' });
       }
     }
+
+    const token = generateToken(user);
 
     res.status(201).json({
       message: 'Registration successful',
@@ -48,7 +51,8 @@ exports.register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isVerified: user.isVerified
       }
     });
   } catch (err) {
@@ -115,5 +119,78 @@ exports.verifyToken = async (req, res) => {
     res.status(200).json({ valid: true, user });
   } catch (err) {
     res.status(401).json({ valid: false, message: 'Invalid or expired token' });
+  }
+};
+
+// GET /api/auth/users
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.status(200).json({ users });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+  }
+};
+
+// PUT /api/auth/users/:id/verify
+exports.updateUserVerification = async (req, res) => {
+  try {
+    const { isVerified } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isVerified: !!isVerified },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User verification updated', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update verification', error: err.message });
+  }
+};
+
+// DELETE /api/auth/users/:id
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // If deleting a doctor, also remove their profile from doctor-service
+    if (user.role === 'doctor') {
+      try {
+        let doctorId = null;
+
+        // Try lookup by userId first
+        try {
+          const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/user/${user._id}`);
+          if (docRes.data && docRes.data._id) doctorId = docRes.data._id;
+        } catch (_) {}
+
+        // Fallback: lookup by email for doctors registered before userId was added
+        if (!doctorId && user.email) {
+          try {
+            const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/email/${encodeURIComponent(user.email)}`);
+            if (docRes.data && docRes.data._id) doctorId = docRes.data._id;
+          } catch (_) {}
+        }
+
+        if (doctorId) {
+          await axios.delete(`${DOCTOR_SERVICE_URL}/api/doctors/${doctorId}`);
+        }
+      } catch (err) {
+        console.error('Failed to delete doctor profile from doctor-service:', err.message);
+      }
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'User deleted successfully', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete user', error: err.message });
   }
 };
