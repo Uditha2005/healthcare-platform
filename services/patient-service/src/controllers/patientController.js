@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -127,12 +128,28 @@ exports.addPrescription = async (req, res) => {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
+    // Resolve doctor name from auth User
+    let doctorName = 'Doctor';
+    try {
+      const doctorUser = await User.findById(req.user.id).select('name');
+      if (doctorUser && doctorUser.name) doctorName = doctorUser.name;
+    } catch (_) {}
+
+    // Resolve patient name from auth User
+    let patientName = 'Patient';
+    try {
+      const patientUser = await User.findById(patientId).select('name');
+      if (patientUser && patientUser.name) patientName = patientUser.name;
+    } catch (_) {}
+
     const prescription = {
       date: new Date(),
       medication,
       dosage,
       instructions: instructions || '',
-      doctor: req.user.id
+      doctor: req.user.id,
+      doctorName,
+      patientName
     };
 
     patient.prescriptions.push(prescription);
@@ -294,6 +311,9 @@ exports.downloadPrescriptions = async (req, res) => {
       doc.text(`Dosage: ${rx.dosage}`);
       if (rx.instructions) {
         doc.text(`Instructions: ${rx.instructions}`);
+      }
+      if (rx.doctorName) {
+        doc.text(`Prescribed by: Dr. ${rx.doctorName}`);
       }
       doc.text(`Date: ${rx.date ? new Date(rx.date).toLocaleDateString() : 'N/A'}`);
       doc.moveDown(0.5);

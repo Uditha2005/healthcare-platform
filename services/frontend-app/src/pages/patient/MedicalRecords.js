@@ -100,6 +100,7 @@ const MedicalRecords = () => {
                 <strong>{item.medication}</strong>
                 <p>Dosage: {item.dosage}</p>
                 <p>{item.instructions || 'No instructions'}</p>
+                {item.doctorName && <p style={{ color: '#2b6cb0' }}>👨‍⚕️ Dr. {item.doctorName}</p>}
                 <small>{item.date ? new Date(item.date).toLocaleDateString() : 'Date not recorded'}</small>
               </div>
             ))}

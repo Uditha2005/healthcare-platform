@@ -161,6 +161,33 @@ exports.deleteUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // If deleting a doctor, also remove their profile from doctor-service
+    if (user.role === 'doctor') {
+      try {
+        let doctorId = null;
+
+        // Try lookup by userId first
+        try {
+          const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/user/${user._id}`);
+          if (docRes.data && docRes.data._id) doctorId = docRes.data._id;
+        } catch (_) {}
+
+        // Fallback: lookup by email for doctors registered before userId was added
+        if (!doctorId && user.email) {
+          try {
+            const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/email/${encodeURIComponent(user.email)}`);
+            if (docRes.data && docRes.data._id) doctorId = docRes.data._id;
+          } catch (_) {}
+        }
+
+        if (doctorId) {
+          await axios.delete(`${DOCTOR_SERVICE_URL}/api/doctors/${doctorId}`);
+        }
+      } catch (err) {
+        console.error('Failed to delete doctor profile from doctor-service:', err.message);
+      }
+    }
+
     await User.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'User deleted successfully', user });
   } catch (err) {

@@ -1,4 +1,5 @@
 const Appointment = require('../models/Appointment');
+const User = require('../models/User');
 const axios = require('axios');
 
 const DOCTOR_SERVICE_URL = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
@@ -40,7 +41,22 @@ exports.getAppointments = async (req, res) => {
     // Admin can see all
 
     const appointments = await Appointment.find(query).sort({ date: -1 });
-    res.json(appointments);
+
+    // Enrich with patient and doctor names
+    const enriched = await Promise.all(appointments.map(async (apt) => {
+      const obj = apt.toObject();
+      try {
+        const patientUser = await User.findById(apt.patientId).select('name');
+        if (patientUser) obj.patientName = patientUser.name;
+      } catch (_) {}
+      try {
+        const docRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/${apt.doctorId}`);
+        if (docRes.data && docRes.data.name) obj.doctorName = docRes.data.name;
+      } catch (_) {}
+      return obj;
+    }));
+
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
