@@ -13,6 +13,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Parse JSON body so fixRequestBody can re-stream it to proxied services
+app.use(express.json());
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'API Gateway is running' });
 });
@@ -23,7 +26,7 @@ app.get('/health', (req, res) => {
 app.use('/api/doctors', createProxyMiddleware({
   target: process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 /* =========================
@@ -32,7 +35,7 @@ app.use('/api/doctors', createProxyMiddleware({
 app.use('/api/sessions', createProxyMiddleware({
   target: process.env.TELEMEDICINE_SERVICE_URL || 'http://localhost:5003',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 /* =========================
@@ -41,48 +44,46 @@ app.use('/api/sessions', createProxyMiddleware({
 app.use('/api/auth', createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   changeOrigin: true,
-  on: {
-    proxyReq: fixRequestBody,
-    error: (err, req, res) => {
-      res.status(502).json({ message: 'Auth service unavailable' });
-    }
+  onProxyReq: fixRequestBody,
+  onError: (err, req, res) => {
+    res.status(502).json({ message: 'Auth service unavailable' });
   }
 }));
 
 app.use('/api/patient', createProxyMiddleware({
   target: process.env.PATIENT_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/patient', createProxyMiddleware({
   target: process.env.PATIENT_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/api/appointments', createProxyMiddleware({
   target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/api/appointment', createProxyMiddleware({
   target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/appointments', createProxyMiddleware({
   target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/appointment', createProxyMiddleware({
   target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
-  on: { proxyReq: fixRequestBody }
+  onProxyReq: fixRequestBody
 }));
 
 app.use('/api/payment', createProxyMiddleware({

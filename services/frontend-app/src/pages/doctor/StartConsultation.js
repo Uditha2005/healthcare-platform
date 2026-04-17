@@ -9,6 +9,8 @@ const StartConsultation = () => {
   const [prescription, setPrescription] = useState({ patientId: '', medication: '', dosage: '', instructions: '' });
   const [loading, setLoading] = useState(true);
   const [showPrescription, setShowPrescription] = useState(false);
+  const [startingSession, setStartingSession] = useState(null);
+  const [endingSession, setEndingSession] = useState(null);
 
   useEffect(() => {
     API.get('/appointment')
@@ -20,6 +22,57 @@ const StartConsultation = () => {
       .catch(() => setAppointments([]))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleStartVideo = async (apt) => {
+    setStartingSession(apt._id);
+    try {
+      // Create session in telemedicine service
+      const sessionRes = await API.post('/sessions', {
+        doctorId: apt.doctorId,
+        patientId: apt.patientId,
+        appointmentId: apt._id,
+      });
+      const meetingLink = sessionRes.data.meetingLink;
+
+      // Save meetingLink on the appointment so patient can see it
+      await API.put(`/appointment/${apt._id}`, { meetingLink });
+
+      // Update local state
+      setAppointments(prev => prev.map(a =>
+        a._id === apt._id ? { ...a, meetingLink } : a
+      ));
+
+      toast.success('Session started! Opening video...');
+      window.open(meetingLink, '_blank');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to start session');
+    } finally {
+      setStartingSession(null);
+    }
+  };
+
+  const handleEndSession = async (apt) => {
+    setEndingSession(apt._id);
+    try {
+      // End session in telemedicine service
+      await API.patch(`/sessions/appointment/${apt._id}/end`);
+
+      // Clear meetingLink on the appointment
+      await API.put(`/appointment/${apt._id}`, { meetingLink: '' });
+
+      // Mark appointment as completed
+      await API.patch(`/appointment/${apt._id}/status`, { status: 'completed' });
+
+      // Remove from local list (it's no longer confirmed)
+      setAppointments(prev => prev.filter(a => a._id !== apt._id));
+
+      toast.success('Session ended and appointment completed.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to end session');
+    } finally {
+      setEndingSession(null);
+    }
+  };
 
   const handlePrescription = async e => {
     e.preventDefault();
@@ -47,11 +100,34 @@ const StartConsultation = () => {
             <div key={i} style={styles.card}>
               <h3>👤 {apt.patientName || 'Patient'}</h3>
               <p>📅 {new Date(apt.date).toLocaleDateString()} at {apt.time}</p>
-              <p>📝 {apt.reason}</p>
+              <p>🏥 {apt.specialty}</p>
+              {apt.notes && <p>📝 {apt.notes}</p>}
+              {apt.meetingLink && (
+                <p style={{ color: '#38a169', fontWeight: 'bold' }}>✅ Session active</p>
+              )}
               <div style={styles.actions}>
-                <button style={styles.startBtn} onClick={() => toast.info('Video session starting...')}>
-                  🎥 Start Video
-                </button>
+                {apt.meetingLink ? (
+                  <>
+                    <button style={styles.startBtn} onClick={() => window.open(apt.meetingLink, '_blank')}>
+                      🎥 Rejoin Video
+                    </button>
+                    <button
+                      style={styles.endBtn}
+                      onClick={() => handleEndSession(apt)}
+                      disabled={endingSession === apt._id}
+                    >
+                      {endingSession === apt._id ? '⏳ Ending...' : '⏹ End Session'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    style={styles.startBtn}
+                    onClick={() => handleStartVideo(apt)}
+                    disabled={startingSession === apt._id}
+                  >
+                    {startingSession === apt._id ? '⏳ Starting...' : '🎥 Start Video'}
+                  </button>
+                )}
                 <button style={styles.prescribeBtn} onClick={() => { setShowPrescription(true); setPrescription(p => ({ ...p, patientId: apt.patientId })); }}>
                   💊 Prescribe
                 </button>
@@ -89,6 +165,7 @@ const styles = {
   empty: { background: 'white', padding: '40px', borderRadius: '12px', textAlign: 'center' },
   actions: { display: 'flex', gap: '10px', marginTop: '12px' },
   startBtn: { padding: '8px 16px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  endBtn: { padding: '8px 16px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
   prescribeBtn: { padding: '8px 16px', background: '#38a169', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
   backBtn: { padding: '8px 16px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
   modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' },

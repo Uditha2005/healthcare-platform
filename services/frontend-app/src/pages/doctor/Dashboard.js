@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import API from '../../services/api';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -10,25 +9,6 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
-  };
-
-  // Start Telemedicine Session
-  const startSession = async () => {
-    try {
-      const res = await API.post('/sessions', {
-        doctorId: user?.id || "demoDoctor",
-        patientId: "demoPatient"
-      });
-
-      if (res.data?.meetingLink) {
-        window.open(res.data.meetingLink, "_blank");
-      } else {
-        alert("Failed to create session");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error starting session");
-    }
   };
 
   return (
@@ -73,7 +53,7 @@ const Dashboard = () => {
         <div style={styles.card}>
           <h3>🎥 Start Consultation</h3>
           <p>Begin telemedicine session</p>
-          <button style={styles.btn} onClick={startSession}>
+          <button style={styles.btn} onClick={() => navigate('/doctor/consultation')}>
             Start Session
           </button>
         </div>

@@ -10,11 +10,16 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    appointmentId: {
+      type: String,
+      required: true,
+    },
     meetingLink: {
       type: String,
     },
     status: {
       type: String,
+      enum: ["scheduled", "active", "ended"],
       default: "scheduled",
     },
   },

@@ -243,7 +243,7 @@ exports.updateAppointment = async (req, res) => {
     }
 
     // Only allow specific fields to be updated
-    const allowedUpdates = ['date', 'time', 'notes', 'status'];
+    const allowedUpdates = ['date', 'time', 'notes', 'status', 'meetingLink'];
     const sanitizedUpdates = {};
     for (const key of allowedUpdates) {
       if (updates[key] !== undefined) {
