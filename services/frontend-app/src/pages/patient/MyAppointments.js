@@ -92,6 +92,7 @@ const PatientAppointments = () => {
           {appointments.map(appointment => (
             <div key={appointment._id} style={styles.card}>
               <h3>{appointment.specialty || 'Appointment'}</h3>
+              <p>👨‍⚕️ Dr. {appointment.doctorName || 'N/A'}</p>
               <p>Date: {appointment.date ? new Date(appointment.date).toLocaleDateString() : 'Not set'}</p>
               <p>Time: {appointment.time}</p>
               <p>Notes: {appointment.notes || 'No notes'}</p>
