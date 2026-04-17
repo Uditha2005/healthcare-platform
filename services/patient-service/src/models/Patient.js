@@ -38,11 +38,14 @@ const patientSchema = new mongoose.Schema({
     medication: String,
     dosage: String,
     instructions: String,
-    doctor: String
+    doctor: String,
+    doctorName: String,
+    patientName: String
   }],
   reports: [{
     filename: String,
     originalName: String,
+    description: String,
     uploadDate: {
       type: Date,
       default: Date.now

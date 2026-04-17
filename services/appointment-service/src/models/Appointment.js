@@ -28,6 +28,10 @@ const appointmentSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
   },
+  meetingLink: {
+    type: String,
+    default: null
+  },
   notes: {
     type: String
   }

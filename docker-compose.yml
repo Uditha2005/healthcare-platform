@@ -1,0 +1,168 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: healthcare-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  auth-service:
+    build: ./services/auth-service
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb+srv://uditha:uditha@cluster0.dt9hq.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=your_super_secret_jwt_key_2024
+      - JWT_EXPIRES_IN=7d
+      - DOCTOR_SERVICE_URL=http://doctor-service:5002
+    depends_on:
+      - mongo
+      - doctor-service
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  # Patient Service
+  patient-service:
+    build: ./services/patient-service
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: your_super_secret_jwt_key_2024
+      PORT: 3002
+    depends_on:
+      - mongo
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
+  appointment-service:
+    build: ./services/appointment-service
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: your_super_secret_jwt_key_2024
+      DOCTOR_SERVICE_URL: http://doctor-service:5002
+      PORT: 3003
+    depends_on:
+      - mongo
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  payment-service:
+    build: ./services/payment-service
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: your_super_secret_jwt_key_2024
+      STRIPE_SECRET_KEY: sk_test_your_key
+      STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret
+      PORT: 3004
+    depends_on:
+      - mongo
+    ports:
+      - "3004:3004"
+    restart: unless-stopped
+
+  notification-service:
+    build: ./services/notification-service
+    env_file:
+      - ./services/notification-service/.env
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: your_super_secret_jwt_key_2024
+      PORT: 3005
+    depends_on:
+      - mongo
+    ports:
+      - "3005:3005"
+    restart: unless-stopped
+
+  ai-symptom-service:
+    build: ./services/ai-symptom-service
+    env_file:
+      - ./services/ai-symptom-service/.env
+    environment:
+      JWT_SECRET: your_super_secret_jwt_key_2024
+      PORT: 3006
+    ports:
+      - "3006:3006"
+    restart: unless-stopped
+
+  doctor-service:
+    build: ./services/doctor-service
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      PORT: 5002
+    depends_on:
+      - mongo
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+  telemedicine-service:
+    build: ./services/telemedicine-service
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      PORT: 5003
+    depends_on:
+      - mongo
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./services/api-gateway
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PATIENT_SERVICE_URL: http://patient-service:3002
+      APPOINTMENT_SERVICE_URL: http://appointment-service:3003
+      DOCTOR_SERVICE_URL: http://doctor-service:5002
+      TELEMEDICINE_SERVICE_URL: http://telemedicine-service:5003
+      PAYMENT_SERVICE_URL: http://payment-service:3004
+      AI_SERVICE_URL: http://ai-symptom-service:3006
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      patient-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+      telemedicine-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      ai-symptom-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend-app:
+    build: ./services/frontend-app
+    environment:
+      PORT: 3007
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "3007:3007"
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

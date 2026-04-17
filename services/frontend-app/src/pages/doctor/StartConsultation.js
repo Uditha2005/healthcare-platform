@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import API from '../../services/api';
+import { toast } from 'react-toastify';
+
+const StartConsultation = () => {
+  const navigate = useNavigate();
+  const [appointments, setAppointments] = useState([]);
+  const [prescription, setPrescription] = useState({ patientId: '', medication: '', dosage: '', instructions: '' });
+  const [loading, setLoading] = useState(true);
+  const [showPrescription, setShowPrescription] = useState(false);
+  const [startingSession, setStartingSession] = useState(null);
+  const [endingSession, setEndingSession] = useState(null);
+
+  useEffect(() => {
+    API.get('/appointment')
+      .then(res => {
+        const data = res.data.appointments || res.data || [];
+        const confirmed = data.filter(a => a.status === 'confirmed');
+        setAppointments(confirmed);
+      })
+      .catch(() => setAppointments([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleStartVideo = async (apt) => {
+    setStartingSession(apt._id);
+    try {
+      // Create session in telemedicine service
+      const sessionRes = await API.post('/sessions', {
+        doctorId: apt.doctorId,
+        patientId: apt.patientId,
+        appointmentId: apt._id,
+      });
+      const meetingLink = sessionRes.data.meetingLink;
+
+      // Save meetingLink on the appointment so patient can see it
+      await API.put(`/appointment/${apt._id}`, { meetingLink });
+
+      // Update local state
+      setAppointments(prev => prev.map(a =>
+        a._id === apt._id ? { ...a, meetingLink } : a
+      ));
+
+      toast.success('Session started! Opening video...');
+      window.open(meetingLink, '_blank');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to start session');
+    } finally {
+      setStartingSession(null);
+    }
+  };
+
+  const handleEndSession = async (apt) => {
+    setEndingSession(apt._id);
+    try {
+      // End session in telemedicine service
+      await API.patch(`/sessions/appointment/${apt._id}/end`);
+
+      // Clear meetingLink on the appointment
+      await API.put(`/appointment/${apt._id}`, { meetingLink: '' });
+
+      // Mark appointment as completed
+      await API.patch(`/appointment/${apt._id}/status`, { status: 'completed' });
+
+      // Remove from local list (it's no longer confirmed)
+      setAppointments(prev => prev.filter(a => a._id !== apt._id));
+
+      toast.success('Session ended and appointment completed.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to end session');
+    } finally {
+      setEndingSession(null);
+    }
+  };
+
+  const handlePrescription = async e => {
+    e.preventDefault();
+    try {
+      await API.post('/patient/prescriptions', prescription);
+      toast.success('Prescription issued!');
+      setShowPrescription(false);
+      setPrescription({ patientId: '', medication: '', dosage: '', instructions: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to issue prescription');
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h2>🎥 Start Consultation</h2>
+        <button style={styles.backBtn} onClick={() => navigate('/doctor/dashboard')}>← Back</button>
+      </div>
+      {loading ? <p>Loading...</p> : appointments.length === 0 ? (
+        <div style={styles.empty}><p>No confirmed appointments for consultation.</p></div>
+      ) : (
+        <div style={styles.grid}>
+          {appointments.map((apt, i) => (
+            <div key={i} style={styles.card}>
+              <h3>👤 {apt.patientName || 'Patient'}</h3>
+              <p>📅 {new Date(apt.date).toLocaleDateString()} at {apt.time}</p>
+              <p>🏥 {apt.specialty}</p>
+              {apt.notes && <p>📝 {apt.notes}</p>}
+              {apt.meetingLink && (
+                <p style={{ color: '#38a169', fontWeight: 'bold' }}>✅ Session active</p>
+              )}
+              <div style={styles.actions}>
+                {apt.meetingLink ? (
+                  <>
+                    <button style={styles.startBtn} onClick={() => window.open(apt.meetingLink, '_blank')}>
+                      🎥 Rejoin Video
+                    </button>
+                    <button
+                      style={styles.endBtn}
+                      onClick={() => handleEndSession(apt)}
+                      disabled={endingSession === apt._id}
+                    >
+                      {endingSession === apt._id ? '⏳ Ending...' : '⏹ End Session'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    style={styles.startBtn}
+                    onClick={() => handleStartVideo(apt)}
+                    disabled={startingSession === apt._id}
+                  >
+                    {startingSession === apt._id ? '⏳ Starting...' : '🎥 Start Video'}
+                  </button>
+                )}
+                <button style={styles.prescribeBtn} onClick={() => { setShowPrescription(true); setPrescription(p => ({ ...p, patientId: apt.patientId })); }}>
+                  💊 Prescribe
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showPrescription && (
+        <div style={styles.modal}>
+          <div style={styles.modalCard}>
+            <h3>💊 Issue Prescription</h3>
+            <form onSubmit={handlePrescription}>
+              <input style={styles.input} placeholder="Medicine name" value={prescription.medication} onChange={e => setPrescription({ ...prescription, medication: e.target.value })} required />
+              <input style={styles.input} placeholder="Dosage (e.g. 2x daily)" value={prescription.dosage} onChange={e => setPrescription({ ...prescription, dosage: e.target.value })} required />
+              <textarea style={styles.textarea} placeholder="Instructions for the patient..." value={prescription.instructions} onChange={e => setPrescription({ ...prescription, instructions: e.target.value })} />
+              <div style={styles.actions}>
+                <button type="submit" style={styles.startBtn}>Issue Prescription</button>
+                <button type="button" style={styles.backBtn} onClick={() => setShowPrescription(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const styles = {
+  container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' },
+  card: { background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+  empty: { background: 'white', padding: '40px', borderRadius: '12px', textAlign: 'center' },
+  actions: { display: 'flex', gap: '10px', marginTop: '12px' },
+  startBtn: { padding: '8px 16px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  endBtn: { padding: '8px 16px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  prescribeBtn: { padding: '8px 16px', background: '#38a169', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  backBtn: { padding: '8px 16px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  modalCard: { background: 'white', padding: '32px', borderRadius: '12px', width: '100%', maxWidth: '400px' },
+  input: { width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '16px', boxSizing: 'border-box' },
+  textarea: { width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '16px', boxSizing: 'border-box', minHeight: '80px' }
+};
+
+export default StartConsultation;
