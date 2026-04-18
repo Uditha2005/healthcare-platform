@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const empty = {
   phone:'', address:'', dateOfBirth:'', gender:'', bloodType:'',
@@ -60,6 +61,9 @@ const PatientProfile = () => {
           <div>
             <div className="dash-header-title">My Profile</div>
             <div className="dash-header-sub">Manage your personal information</div>
+          </div>
+          <div className="dash-header-right">
+            <ThemeToggle />
           </div>
         </div>
 

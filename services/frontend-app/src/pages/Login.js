@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -32,6 +33,7 @@ const Login = () => {
 
   return (
     <div style={s.page}>
+      <div style={{position:'absolute',top:20,right:20,zIndex:10}}><ThemeToggle /></div>
       <div style={s.left}>
         <div style={s.brand}>⚕ MediConnect</div>
         <h1 style={s.hero}>Healthcare<br/>at your<br/>fingertips.</h1>
@@ -63,18 +65,18 @@ const Login = () => {
 };
 
 const s = {
-  page: { display:'flex', minHeight:'100vh', fontFamily:"'Plus Jakarta Sans',sans-serif" },
+  page: { display:'flex', minHeight:'100vh', fontFamily:"'Plus Jakarta Sans',sans-serif", position:'relative' },
   left: { flex:1, background:'linear-gradient(145deg,#0e7490 0%,#0891b2 50%,#6366f1 100%)', padding:'60px 48px', display:'flex', flexDirection:'column', justifyContent:'center', position:'relative', overflow:'hidden' },
   brand: { fontSize:'1.3rem', fontWeight:800, color:'rgba(255,255,255,0.95)', marginBottom:'48px', fontFamily:"'Outfit',sans-serif", letterSpacing:'-0.01em' },
   hero: { fontSize:'3rem', fontWeight:800, color:'white', lineHeight:1.1, marginBottom:'20px', fontFamily:"'Outfit',sans-serif" },
   sub: { color:'rgba(255,255,255,0.78)', fontSize:'1rem', lineHeight:1.6, marginBottom:'32px', maxWidth:'340px' },
   pills: { display:'flex', flexDirection:'column', gap:'10px' },
   pill: { display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.2)', color:'white', padding:'8px 16px', borderRadius:'999px', fontSize:'0.82rem', fontWeight:500, width:'fit-content' },
-  right: { width:'480px', background:'#f0f9ff', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 32px' },
-  card: { background:'white', borderRadius:'20px', padding:'40px', width:'100%', boxShadow:'0 12px 40px rgba(8,145,178,0.12)', border:'1px solid #e0f2fe' },
-  title: { fontSize:'1.6rem', fontWeight:800, color:'#0c1a2e', marginBottom:'6px', fontFamily:"'Outfit',sans-serif" },
-  hint: { color:'#94a3b8', fontSize:'0.9rem', marginBottom:'28px' },
-  link: { textAlign:'center', marginTop:'20px', color:'#94a3b8', fontSize:'0.88rem' }
+  right: { width:'480px', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 32px' },
+  card: { background:'var(--surface)', borderRadius:'20px', padding:'40px', width:'100%', boxShadow:'var(--shadow-lg)', border:'1px solid var(--border)' },
+  title: { fontSize:'1.6rem', fontWeight:800, color:'var(--text-primary)', marginBottom:'6px', fontFamily:"'Outfit',sans-serif" },
+  hint: { color:'var(--text-muted)', fontSize:'0.9rem', marginBottom:'28px' },
+  link: { textAlign:'center', marginTop:'20px', color:'var(--text-muted)', fontSize:'0.88rem' }
 };
 
 export default Login;

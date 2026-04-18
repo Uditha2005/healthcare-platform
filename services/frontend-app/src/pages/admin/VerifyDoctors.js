@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/admin/dashboard' },
@@ -63,7 +64,7 @@ const VerifyDoctors = () => {
             <div className="dash-header-sub">{pending} pending verification · {doctors.length} total doctors</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             {pending > 0 && (
               <span style={{background:'#ef4444',color:'white',borderRadius:'999px',padding:'4px 12px',fontSize:'0.75rem',fontWeight:700}}>
                 {pending} Pending
@@ -94,8 +95,8 @@ const VerifyDoctors = () => {
                             {initials(doc.name)}
                           </div>
                           <div>
-                            <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0c1a2e'}}>Dr. {doc.name}</div>
-                            <div style={{fontSize:'0.8rem',color:'#64748b'}}>{doc.email}</div>
+                            <div style={{fontWeight:700,fontSize:'0.95rem',color:'var(--text-primary)'}}>Dr. {doc.name}</div>
+                            <div style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>{doc.email}</div>
                             {doc.specialization && <div style={{fontSize:'0.78rem',color:'#0891b2',fontWeight:600,marginTop:'2px'}}>{doc.specialization}</div>}
                           </div>
                         </div>
@@ -121,8 +122,8 @@ const VerifyDoctors = () => {
                             {initials(doc.name)}
                           </div>
                           <div>
-                            <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0c1a2e'}}>Dr. {doc.name}</div>
-                            <div style={{fontSize:'0.8rem',color:'#64748b'}}>{doc.email}</div>
+                            <div style={{fontWeight:700,fontSize:'0.95rem',color:'var(--text-primary)'}}>Dr. {doc.name}</div>
+                            <div style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>{doc.email}</div>
                             {doc.specialization && <div style={{fontSize:'0.78rem',color:'#0891b2',fontWeight:600,marginTop:'2px'}}>{doc.specialization}</div>}
                           </div>
                         </div>

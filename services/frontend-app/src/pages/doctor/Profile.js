@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/doctor/dashboard' },
@@ -97,7 +98,7 @@ const DoctorProfile = () => {
             <div className="dash-header-sub">Manage your professional information</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem',background:'linear-gradient(135deg,#10b981,#6366f1)'}}>{initials}</div>
           </div>
         </div>

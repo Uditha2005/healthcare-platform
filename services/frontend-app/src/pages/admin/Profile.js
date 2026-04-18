@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/admin/dashboard' },
@@ -74,7 +75,7 @@ const AdminProfile = () => {
             <div className="dash-header-sub">Manage your account settings</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem',background:'linear-gradient(135deg,#4f46e5,#0891b2)'}}>{initials}</div>
           </div>
         </div>

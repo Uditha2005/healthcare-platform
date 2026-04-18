@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/doctor/dashboard' },
@@ -68,7 +69,7 @@ const ManageAvailability = () => {
             <div className="dash-header-title">Manage Availability</div>
             <div className="dash-header-sub">Set your weekly schedule for patient appointments</div>
           </div>
-          <div className="dash-header-right"><button className="dash-notif-btn">🔔</button></div>
+          <div className="dash-header-right"><ThemeToggle /></div>
         </div>
 
         <div className="dash-content">

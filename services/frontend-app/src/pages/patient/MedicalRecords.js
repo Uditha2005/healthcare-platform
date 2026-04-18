@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const MedicalRecords = () => {
   const navigate = useNavigate();
@@ -47,7 +48,10 @@ const MedicalRecords = () => {
       <div style={{padding:'24px'}}>
         <div className="hc-page-header">
           <div className="hc-page-title">Medical Records</div>
-          <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <ThemeToggle />
+            <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+          </div>
         </div>
 
         {loading ? <div className="hc-empty">Loading records...</div> : <>

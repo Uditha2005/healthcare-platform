@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/doctor/dashboard' },
@@ -90,7 +91,7 @@ const StartConsultation = () => {
             <div className="dash-header-sub">Confirmed appointments ready for video session</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             <span style={{background:'#10b981',color:'white',borderRadius:'999px',padding:'4px 12px',fontSize:'0.75rem',fontWeight:700}}>
               {appointments.length} Ready
             </span>
@@ -115,8 +116,8 @@ const StartConsultation = () => {
                       {apt.patientName?.charAt(0)||'P'}
                     </div>
                     <div>
-                      <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0c1a2e'}}>{apt.patientName||'Patient'}</div>
-                      <div style={{fontSize:'0.78rem',color:'#64748b'}}>{apt.specialty}</div>
+                      <div style={{fontWeight:700,fontSize:'0.95rem',color:'var(--text-primary)'}}>{apt.patientName||'Patient'}</div>
+                      <div style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>{apt.specialty}</div>
                     </div>
                     {apt.meetingLink && <span style={{marginLeft:'auto',background:'#d1fae5',color:'#065f46',borderRadius:'999px',padding:'3px 10px',fontSize:'0.72rem',fontWeight:700}}>🟢 Live</span>}
                   </div>
@@ -124,7 +125,7 @@ const StartConsultation = () => {
                     <div style={s.row}>📅 <span>{apt.date?new Date(apt.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'} at {apt.time}</span></div>
                     {apt.notes && <div style={s.row}>📝 <span style={{fontSize:'0.8rem'}}>{apt.notes}</span></div>}
                   </div>
-                  <div style={{display:'flex',flexDirection:'column',gap:'8px',borderTop:'1px solid #e0f2fe',paddingTop:'14px'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:'8px',borderTop:'1px solid var(--border)',paddingTop:'14px'}}>
                     {apt.meetingLink ? (
                       <>
                         <button className="hc-btn hc-btn-primary" style={{justifyContent:'center'}} onClick={() => window.open(apt.meetingLink,'_blank')}>🎥 Rejoin Video</button>
@@ -151,12 +152,12 @@ const StartConsultation = () => {
       {/* Prescription Modal */}
       {showPrescription && (
         <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(12,26,46,0.65)',backdropFilter:'blur(6px)',display:'flex',justifyContent:'center',alignItems:'center',zIndex:300,padding:'20px'}}>
-          <div style={{background:'white',borderRadius:'24px',padding:'40px',width:'100%',maxWidth:'460px',boxShadow:'0 24px 64px rgba(0,0,0,0.25)'}}>
+          <div style={{background:'var(--surface)',borderRadius:'24px',padding:'40px',width:'100%',maxWidth:'460px',boxShadow:'0 24px 64px rgba(0,0,0,0.25)',color:'var(--text-primary)'}}>
             <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'24px'}}>
               <div style={{width:44,height:44,borderRadius:'12px',background:'#f0fdf4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem'}}>💊</div>
               <div>
                 <h3 style={{fontFamily:"'Outfit',sans-serif",fontSize:'1.2rem',fontWeight:800}}>Issue Prescription</h3>
-                <p style={{color:'#64748b',fontSize:'0.82rem',marginTop:'2px'}}>Fill in the medication details</p>
+                <p style={{color:'var(--text-muted)',fontSize:'0.82rem',marginTop:'2px'}}>Fill in the medication details</p>
               </div>
             </div>
             <form onSubmit={handlePrescription}>
@@ -178,5 +179,5 @@ const StartConsultation = () => {
   );
 };
 
-const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'#475569',alignItems:'flex-start'} };
+const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'var(--text-secondary)',alignItems:'flex-start'} };
 export default StartConsultation;

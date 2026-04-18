@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PatientLayout from './components/patient/PatientLayout';
@@ -42,6 +43,7 @@ const ProtectedRoute = ({ children, role }) => {
 
 const App = () => {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <ToastContainer position="top-right" autoClose={3000} />
@@ -76,6 +78,7 @@ const App = () => {
         </Routes>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 

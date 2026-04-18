@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/admin/dashboard' },
@@ -70,7 +71,7 @@ const ManageUsers = () => {
             <div className="dash-header-sub">{filtered.length} user{filtered.length !== 1 ? 's' : ''} shown</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
           </div>
         </div>
 

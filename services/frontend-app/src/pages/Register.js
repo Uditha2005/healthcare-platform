@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Register = () => {
   const [form, setForm] = useState({ name:'', email:'', password:'', role:'patient', specialization:'', experience:'' });
@@ -30,6 +31,7 @@ const Register = () => {
         <div style={s.brand}>⚕ MediConnect</div>
         <h1 style={s.hero}>Join us today.</h1>
         <p style={s.sub}>Create your account and start managing your healthcare journey with ease.</p>
+        <div style={{position:'absolute',top:20,right:20,zIndex:10}}><ThemeToggle /></div>
         <div style={s.steps}>
           {[['01','Create account'],['02','Complete profile'],['03','Start using platform']].map(([n,t])=>(
             <div key={n} style={s.step}>
@@ -84,8 +86,8 @@ const Register = () => {
 };
 
 const s = {
-  page: { display:'flex', minHeight:'100vh', fontFamily:"'Plus Jakarta Sans',sans-serif" },
-  left: { flex:1, background:'linear-gradient(145deg,#0e7490 0%,#0891b2 50%,#6366f1 100%)', padding:'60px 48px', display:'flex', flexDirection:'column', justifyContent:'center' },
+  page: { display:'flex', minHeight:'100vh', fontFamily:"'Plus Jakarta Sans',sans-serif", position:'relative' },
+  left: { flex:1, background:'linear-gradient(145deg,#0e7490 0%,#0891b2 50%,#6366f1 100%)', padding:'60px 48px', display:'flex', flexDirection:'column', justifyContent:'center', position:'relative' },
   brand: { fontSize:'1.3rem', fontWeight:800, color:'rgba(255,255,255,0.95)', marginBottom:'48px', fontFamily:"'Outfit',sans-serif" },
   hero: { fontSize:'2.8rem', fontWeight:800, color:'white', lineHeight:1.1, marginBottom:'20px', fontFamily:"'Outfit',sans-serif" },
   sub: { color:'rgba(255,255,255,0.78)', fontSize:'1rem', lineHeight:1.6, marginBottom:'40px', maxWidth:'340px' },
@@ -93,14 +95,14 @@ const s = {
   step: { display:'flex', alignItems:'center', gap:'14px' },
   stepNum: { width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.75rem', fontWeight:700, flexShrink:0 },
   stepText: { color:'rgba(255,255,255,0.85)', fontSize:'0.9rem', fontWeight:500 },
-  right: { width:'500px', background:'#f0f9ff', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 32px', overflowY:'auto' },
-  card: { background:'white', borderRadius:'20px', padding:'36px', width:'100%', boxShadow:'0 12px 40px rgba(8,145,178,0.12)', border:'1px solid #e0f2fe' },
-  title: { fontSize:'1.6rem', fontWeight:800, color:'#0c1a2e', marginBottom:'6px', fontFamily:"'Outfit',sans-serif" },
-  hint: { color:'#94a3b8', fontSize:'0.9rem', marginBottom:'24px' },
+  right: { width:'500px', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 32px', overflowY:'auto' },
+  card: { background:'var(--surface)', borderRadius:'20px', padding:'36px', width:'100%', boxShadow:'var(--shadow-lg)', border:'1px solid var(--border)' },
+  title: { fontSize:'1.6rem', fontWeight:800, color:'var(--text-primary)', marginBottom:'6px', fontFamily:"'Outfit',sans-serif" },
+  hint: { color:'var(--text-muted)', fontSize:'0.9rem', marginBottom:'24px' },
   roleGrid: { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px', marginBottom:'16px' },
-  roleCard: { display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', padding:'12px 8px', borderRadius:'10px', border:'2px solid #e0f2fe', cursor:'pointer', transition:'all 0.15s', background:'#f8fafc' },
-  roleCardActive: { border:'2px solid #0891b2', background:'#ecfeff' },
-  link: { textAlign:'center', marginTop:'20px', color:'#94a3b8', fontSize:'0.88rem' }
+  roleCard: { display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', padding:'12px 8px', borderRadius:'10px', border:'2px solid var(--border)', cursor:'pointer', transition:'all 0.15s', background:'var(--surface2)' },
+  roleCardActive: { border:'2px solid #0891b2', background:'var(--primary-muted)' },
+  link: { textAlign:'center', marginTop:'20px', color:'var(--text-muted)', fontSize:'0.88rem' }
 };
 
 export default Register;
