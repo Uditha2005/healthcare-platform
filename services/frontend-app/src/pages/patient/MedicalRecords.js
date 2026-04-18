@@ -5,142 +5,99 @@ import { toast } from 'react-toastify';
 
 const MedicalRecords = () => {
   const navigate = useNavigate();
-  const [records, setRecords] = useState({ medicalHistory: [], prescriptions: [], reports: [] });
+  const [records, setRecords] = useState({medicalHistory:[],prescriptions:[],reports:[]});
   const [loading, setLoading] = useState(true);
 
-  const loadRecords = () => {
+  const load = () => {
     setLoading(true);
     API.get('/patient/history')
-      .then(res => setRecords({
-        medicalHistory: res.data.medicalHistory || [],
-        prescriptions: res.data.prescriptions || [],
-        reports: res.data.reports || []
-      }))
-      .catch(err => toast.error(err.response?.data?.message || 'Failed to load records'))
-      .finally(() => setLoading(false));
+      .then(res=>setRecords({medicalHistory:res.data.medicalHistory||[],prescriptions:res.data.prescriptions||[],reports:res.data.reports||[]}))
+      .catch(err=>toast.error(err.response?.data?.message||'Failed to load'))
+      .finally(()=>setLoading(false));
+  };
+  useEffect(load,[]);
+
+  const deleteReport = async id => {
+    try { await API.delete(`/patient/reports/${id}`); toast.success('Deleted'); load(); }
+    catch(e){ toast.error(e.response?.data?.message||'Failed'); }
   };
 
-  useEffect(() => {
-    loadRecords();
-  }, []);
-
-  const deleteReport = async reportId => {
+  const downloadPDF = async () => {
     try {
-      await API.delete(`/patient/reports/${reportId}`);
-      toast.success('Report deleted');
-      loadRecords();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete report');
-    }
+      const res = await API.get('/patient/prescriptions/download',{responseType:'blob'});
+      const url = window.URL.createObjectURL(new Blob([res.data],{type:'application/pdf'}));
+      const a = document.createElement('a'); a.href=url; a.download='prescriptions.pdf';
+      document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    } catch(e){ toast.error('Download failed'); }
   };
 
-  const downloadPrescriptions = async () => {
+  const downloadReport = async (id,name) => {
     try {
-      const res = await API.get('/patient/prescriptions/download', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'prescriptions.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Failed to download prescriptions');
-    }
-  };
-
-  const downloadReport = async (reportId, filename) => {
-    try {
-      const res = await API.get(`/patient/reports/${reportId}/download`, { responseType: 'blob' });
+      const res = await API.get(`/patient/reports/${id}/download`,{responseType:'blob'});
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename || 'report';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Failed to download report');
-    }
+      const a = document.createElement('a'); a.href=url; a.download=name||'report';
+      document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+    } catch(e){ toast.error('Download failed'); }
   };
 
-  const renderEmpty = label => <p style={styles.emptyText}>No {label} yet.</p>;
+  const Empty = ({label}) => <p style={{color:'#94a3b8',fontSize:'0.88rem',padding:'12px 0'}}>No {label} on record yet.</p>;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2>Medical Records</h2>
-        <button style={styles.backBtn} onClick={() => navigate('/patient/dashboard')}>Back</button>
-      </div>
+    <div style={{minHeight:'100vh',background:'#f0f9ff',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div style={{maxWidth:'900px',margin:'0 auto',padding:'32px 24px'}}>
+        <div className="hc-page-header">
+          <div className="hc-page-title">Medical Records</div>
+          <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+        </div>
 
-      {loading ? <p>Loading records...</p> : (
-        <>
-          <section style={styles.section}>
-            <h3>Medical History</h3>
-            {records.medicalHistory.length === 0 ? renderEmpty('medical history') : records.medicalHistory.map(item => (
-              <div key={item._id || `${item.condition}-${item.date}`} style={styles.item}>
+        {loading ? <div className="hc-empty">Loading records...</div> : <>
+          <div className="hc-section">
+            <h3>🏥 Medical History</h3>
+            {records.medicalHistory.length===0 ? <Empty label="medical history"/> : records.medicalHistory.map(item=>(
+              <div key={item._id||item.condition} className="hc-item">
                 <strong>{item.condition}</strong>
-                <p>{item.notes || 'No notes'}</p>
-                <small>{item.date ? new Date(item.date).toLocaleDateString() : 'Date not recorded'}</small>
+                <p>{item.notes||'No notes'}</p>
+                <small>{item.date?new Date(item.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Date not recorded'}</small>
               </div>
             ))}
-          </section>
+          </div>
 
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
-              <h3>Prescriptions</h3>
-              {records.prescriptions.length > 0 && (
-                <button style={styles.downloadBtn} onClick={downloadPrescriptions}>⬇ Download All as PDF</button>
-              )}
+          <div className="hc-section">
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',paddingBottom:'10px',borderBottom:'2px solid #ecfeff'}}>
+              <h3 style={{margin:0,border:'none',padding:0}}>💊 Prescriptions</h3>
+              {records.prescriptions.length>0 && <button className="hc-btn hc-btn-primary" style={{fontSize:'0.8rem',padding:'8px 14px'}} onClick={downloadPDF}>⬇ Download PDF</button>}
             </div>
-            {records.prescriptions.length === 0 ? renderEmpty('prescriptions') : records.prescriptions.map(item => (
-              <div key={item._id || `${item.medication}-${item.date}`} style={styles.item}>
+            {records.prescriptions.length===0 ? <Empty label="prescriptions"/> : records.prescriptions.map(item=>(
+              <div key={item._id||item.medication} className="hc-item">
                 <strong>{item.medication}</strong>
                 <p>Dosage: {item.dosage}</p>
-                <p>{item.instructions || 'No instructions'}</p>
-                {item.doctorName && <p style={{ color: '#2b6cb0' }}>👨‍⚕️ Dr. {item.doctorName}</p>}
-                <small>{item.date ? new Date(item.date).toLocaleDateString() : 'Date not recorded'}</small>
+                <p>{item.instructions||'No instructions'}</p>
+                {item.doctorName && <p style={{color:'#0891b2',fontWeight:600}}>Dr. {item.doctorName}</p>}
+                <small>{item.date?new Date(item.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Date not recorded'}</small>
               </div>
             ))}
-          </section>
+          </div>
 
-          <section style={styles.section}>
-            <h3>Uploaded Reports</h3>
-            {records.reports.length === 0 ? renderEmpty('reports') : records.reports.map(report => (
-              <div key={report._id || report.filename} style={styles.item}>
-                <strong>{report.originalName || report.filename}</strong>
-                <p>{report.description || 'No description'}</p>
-                <small>{report.uploadDate ? new Date(report.uploadDate).toLocaleDateString() : 'Upload date not recorded'}</small>
-                <div style={styles.itemActions}>
-                  {report._id && (
-                    <button style={styles.downloadBtn} onClick={() => downloadReport(report._id, report.originalName || report.filename)}>⬇ Download</button>
-                  )}
-                  {report._id && (
-                    <button style={styles.deleteBtn} onClick={() => deleteReport(report._id)}>Delete Report</button>
-                  )}
-                </div>
+          <div className="hc-section">
+            <h3>📁 Uploaded Reports</h3>
+            {records.reports.length===0 ? <Empty label="reports"/> : records.reports.map(r=>(
+              <div key={r._id||r.filename} className="hc-item">
+                <strong>{r.originalName||r.filename}</strong>
+                <p>{r.description||'No description'}</p>
+                <small>{r.uploadDate?new Date(r.uploadDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Upload date not recorded'}</small>
+                {r._id && (
+                  <div style={{display:'flex',gap:'8px',marginTop:'12px'}}>
+                    <button className="hc-btn hc-btn-primary" style={{fontSize:'0.8rem',padding:'7px 14px'}} onClick={()=>downloadReport(r._id,r.originalName||r.filename)}>⬇ Download</button>
+                    <button className="hc-btn hc-btn-danger" style={{fontSize:'0.8rem',padding:'7px 14px'}} onClick={()=>deleteReport(r._id)}>Delete</button>
+                  </div>
+                )}
               </div>
             ))}
-          </section>
-        </>
-      )}
+          </div>
+        </>}
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  section: { background: 'white', padding: '24px', borderRadius: '8px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' },
-  item: { border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', marginTop: '12px' },
-  itemActions: { display: 'flex', gap: '10px', marginTop: '12px' },
-  emptyText: { color: '#718096' },
-  downloadBtn: { padding: '8px 14px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' },
-  deleteBtn: { padding: '8px 14px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  backBtn: { padding: '8px 16px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }
 };
 
 export default MedicalRecords;

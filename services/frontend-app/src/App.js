@@ -23,11 +23,13 @@ import DoctorDashboard from './pages/doctor/Dashboard';
 import ManageAvailability from './pages/doctor/ManageAvailability';
 import ViewAppointments from './pages/doctor/ViewAppointments';
 import StartConsultation from './pages/doctor/StartConsultation';
+import DoctorProfile from './pages/doctor/Profile';
 
 // Admin
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import VerifyDoctors from './pages/admin/VerifyDoctors';
+import AdminProfile from './pages/admin/Profile';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
@@ -63,11 +65,13 @@ const App = () => {
           <Route path="/doctor/availability" element={<ProtectedRoute role="doctor"><ManageAvailability /></ProtectedRoute>} />
           <Route path="/doctor/appointments" element={<ProtectedRoute role="doctor"><ViewAppointments /></ProtectedRoute>} />
           <Route path="/doctor/consultation" element={<ProtectedRoute role="doctor"><StartConsultation /></ProtectedRoute>} />
+          <Route path="/doctor/profile" element={<ProtectedRoute role="doctor"><DoctorProfile /></ProtectedRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute role="admin"><ManageUsers /></ProtectedRoute>} />
           <Route path="/admin/verify-doctors" element={<ProtectedRoute role="admin"><VerifyDoctors /></ProtectedRoute>} />
+          <Route path="/admin/profile" element={<ProtectedRoute role="admin"><AdminProfile /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
