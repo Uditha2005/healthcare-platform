@@ -1,17 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AISymptomChatWidget from '../../components/patient/AISymptomChatWidget';
-
-const navItems = [
-  { icon:'🏠', label:'Dashboard', route:'/patient/dashboard' },
-  { icon:'📅', label:'Appointments', route:'/patient/appointments' },
-  { icon:'🔍', label:'Find Doctors', route:'/patient/browse-doctors' },
-  { icon:'🗂️', label:'Medical Records', route:'/patient/medical-records' },
-  { icon:'📋', label:'Upload Reports', route:'/patient/upload-reports' },
-  { icon:'🎥', label:'Video Consult', route:'/patient/video-consultation' },
-  { icon:'👤', label:'My Profile', route:'/patient/profile' },
-];
+import API from '../../services/api';
 
 const services = [
   { icon:'🔍', label:'Find Doctors', desc:'Browse specialists and book appointments instantly', btn:'Browse Now', route:'/patient/browse-doctors', bg:'#eff6ff', accent:'#3b82f6' },
@@ -20,13 +11,6 @@ const services = [
   { icon:'📋', label:'Upload Reports', desc:'Securely upload and store your medical documents', btn:'Upload', route:'/patient/upload-reports', bg:'#fff7ed', accent:'#f59e0b' },
   { icon:'🎥', label:'Video Consult', desc:'Join a live telemedicine session with your doctor', btn:'Join Now', route:'/patient/video-consultation', bg:'#fdf4ff', accent:'#a855f7' },
   { icon:'👤', label:'My Profile', desc:'Keep your personal and emergency contact details updated', btn:'Edit Profile', route:'/patient/profile', bg:'#fef2f2', accent:'#ef4444' },
-];
-
-const stats = [
-  { icon:'📅', label:'Appointments', value:'0', bg:'#eff6ff', iconBg:'#dbeafe' },
-  { icon:'💊', label:'Prescriptions', value:'0', bg:'#f0fdf4', iconBg:'#d1fae5' },
-  { icon:'📋', label:'Reports', value:'0', bg:'#fff7ed', iconBg:'#fed7aa' },
-  { icon:'🎥', label:'Consultations', value:'0', bg:'#fdf4ff', iconBg:'#ede9fe' },
 ];
 
 const HeroSVG = () => (
@@ -58,55 +42,47 @@ const HeroSVG = () => (
 );
 
 const PatientDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const currentPath = window.location.pathname;
   const [aiOpen, setAiOpen] = useState(false);
+  const [stats, setStats] = useState([
+    { icon:'📅', label:'Appointments', value:'0', bg:'#eff6ff', iconBg:'#dbeafe' },
+    { icon:'💊', label:'Prescriptions', value:'0', bg:'#f0fdf4', iconBg:'#d1fae5' },
+    { icon:'📋', label:'Reports', value:'0', bg:'#fff7ed', iconBg:'#fed7aa' },
+    { icon:'🎥', label:'Consultations', value:'0', bg:'#fdf4ff', iconBg:'#ede9fe' },
+  ]);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [aptsRes, prescRes, reportsRes] = await Promise.all([
+          API.get('/appointments').catch(() => ({ data: [] })),
+          API.get('/patient/prescriptions').catch(() => ({ data: [] })),
+          API.get('/patient/reports').catch(() => ({ data: [] })),
+        ]);
+        const appointments = Array.isArray(aptsRes.data) ? aptsRes.data : [];
+        const prescriptions = Array.isArray(prescRes.data) ? prescRes.data : (prescRes.data?.prescriptions || []);
+        const reports = Array.isArray(reportsRes.data) ? reportsRes.data : (reportsRes.data?.reports || []);
+        const consultations = appointments.filter(a => a.status === 'completed').length;
+        setStats([
+          { icon:'📅', label:'Appointments', value: String(appointments.length), bg:'#eff6ff', iconBg:'#dbeafe' },
+          { icon:'💊', label:'Prescriptions', value: String(prescriptions.length), bg:'#f0fdf4', iconBg:'#d1fae5' },
+          { icon:'📋', label:'Reports', value: String(reports.length), bg:'#fff7ed', iconBg:'#fed7aa' },
+          { icon:'🎥', label:'Consultations', value: String(consultations), bg:'#fdf4ff', iconBg:'#ede9fe' },
+        ]);
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'P';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="dash-shell">
-      {/* SIDEBAR */}
-      <aside className="dash-sidebar">
-        <div className="dash-sidebar-logo">
-          <span>⚕ Medi<em>Connect</em></span>
-        </div>
-
-        <div className="dash-user-card">
-          <div className="dash-user-avatar">{initials}</div>
-          <div className="dash-user-info">
-            <strong>{user?.name}</strong>
-            <span>Patient</span>
-          </div>
-        </div>
-
-        <nav className="dash-nav">
-          <div className="dash-nav-label">Navigation</div>
-          {navItems.map(item => (
-            <button
-              key={item.route}
-              className={`dash-nav-item ${currentPath === item.route ? 'active' : ''}`}
-              onClick={() => navigate(item.route)}
-            >
-              <span className="dash-nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="dash-sidebar-footer">
-          <button className="dash-logout-btn" onClick={handleLogout}>
-            <span>🚪</span> Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN */}
-      <main className="dash-main">
+    <>
         <div className="dash-header">
           <div>
             <div className="dash-header-title">Patient Dashboard</div>
@@ -201,11 +177,10 @@ const PatientDashboard = () => {
           </div>
 
         </div>
-      </main>
 
       {/* AI widget — controlled by aiOpen state */}
       <AISymptomChatWidget open={aiOpen} setOpen={setAiOpen} />
-    </div>
+    </>
   );
 };
 

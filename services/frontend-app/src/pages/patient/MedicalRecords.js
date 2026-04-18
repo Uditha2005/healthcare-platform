@@ -43,8 +43,8 @@ const MedicalRecords = () => {
   const Empty = ({label}) => <p style={{color:'#94a3b8',fontSize:'0.88rem',padding:'12px 0'}}>No {label} on record yet.</p>;
 
   return (
-    <div style={{minHeight:'100vh',background:'#f0f9ff',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-      <div style={{maxWidth:'900px',margin:'0 auto',padding:'32px 24px'}}>
+    <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div style={{padding:'24px'}}>
         <div className="hc-page-header">
           <div className="hc-page-title">Medical Records</div>
           <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>

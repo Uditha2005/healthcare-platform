@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/doctor/dashboard' },
@@ -17,13 +18,6 @@ const services = [
   { icon:'🎥', label:'Start Consultation', desc:'Begin a live telemedicine video session', btn:'Start Session', route:'/doctor/consultation', bg:'#fdf4ff', accent:'#a855f7' },
 ];
 
-const stats = [
-  { icon:'📅', label:'Today\'s Appointments', value:'—', iconBg:'#dbeafe' },
-  { icon:'✅', label:'Completed', value:'—', iconBg:'#d1fae5' },
-  { icon:'⏳', label:'Pending', value:'—', iconBg:'#fed7aa' },
-  { icon:'👥', label:'Total Patients', value:'—', iconBg:'#ede9fe' },
-];
-
 const DoctorDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +26,36 @@ const DoctorDashboard = () => {
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'DR';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const [stats, setStats] = useState([
+    { icon:'📅', label:'Today\'s Appointments', value:'...', iconBg:'#dbeafe' },
+    { icon:'✅', label:'Completed', value:'...', iconBg:'#d1fae5' },
+    { icon:'⏳', label:'Pending', value:'...', iconBg:'#fed7aa' },
+    { icon:'👥', label:'Total Patients', value:'...', iconBg:'#ede9fe' },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/appointments');
+        const appointments = res.data;
+        const today = new Date().toISOString().split('T')[0];
+        const todayAppts = appointments.filter(a => a.date && a.date.startsWith(today)).length;
+        const completed = appointments.filter(a => a.status === 'completed').length;
+        const pending = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+        const uniquePatients = new Set(appointments.map(a => a.patientId)).size;
+        setStats([
+          { icon:'📅', label:'Today\'s Appointments', value: String(todayAppts), iconBg:'#dbeafe' },
+          { icon:'✅', label:'Completed', value: String(completed), iconBg:'#d1fae5' },
+          { icon:'⏳', label:'Pending', value: String(pending), iconBg:'#fed7aa' },
+          { icon:'👥', label:'Total Patients', value: String(uniquePatients), iconBg:'#ede9fe' },
+        ]);
+      } catch (err) {
+        console.error('Failed to fetch doctor stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <div className="dash-shell">

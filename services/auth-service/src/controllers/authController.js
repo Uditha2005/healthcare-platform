@@ -146,6 +146,20 @@ exports.updateUserVerification = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Sync verification status to doctor-service if user is a doctor
+    if (user.role === 'doctor') {
+      try {
+        const axios = require('axios');
+        const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002';
+        const doctorRes = await axios.get(`${doctorServiceUrl}/api/doctors/user/${user._id}`);
+        if (doctorRes.data && doctorRes.data._id) {
+          await axios.put(`${doctorServiceUrl}/api/doctors/${doctorRes.data._id}`, { isVerified: !!isVerified });
+        }
+      } catch (syncErr) {
+        console.error('Doctor verification sync failed:', syncErr.message);
+      }
+    }
+
     res.status(200).json({ message: 'User verification updated', user });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update verification', error: err.message });

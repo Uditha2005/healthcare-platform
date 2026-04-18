@@ -1,32 +1,23 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { icon:'🏠', label:'Dashboard', route:'/patient/dashboard' },
-  { icon:'📅', label:'Appointments', route:'/patient/appointments' },
-  { icon:'🔍', label:'Find Doctors', route:'/patient/browse-doctors' },
-  { icon:'🗂️', label:'Medical Records', route:'/patient/medical-records' },
-  { icon:'📋', label:'Upload Reports', route:'/patient/upload-reports' },
-  { icon:'🎥', label:'Video Consult', route:'/patient/video-consultation' },
-  { icon:'👤', label:'My Profile', route:'/patient/profile' },
-];
 
 const BrowseDoctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [specialty, setSpecialty] = useState('');
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const currentPath = window.location.pathname;
   const initials = name => name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) || 'DR';
-  const userInitials = user?.name?.split(' ').map(n=>n[0]).join('').toUpperCase() || 'P';
 
   const fetchDoctors = (sel = '') => {
     setLoading(true);
-    const q = sel ? `?specialty=${encodeURIComponent(sel)}` : '';
+    const params = new URLSearchParams();
+    if (sel) {
+      params.append('specialty', sel);
+      params.append('name', sel);
+    }
+    const q = params.toString() ? `?${params.toString()}` : '';
     API.get(`/doctors${q}`)
       .then(res => {
         const data = res.data.doctors || res.data || [];
@@ -40,40 +31,11 @@ const BrowseDoctors = () => {
   useEffect(() => { fetchDoctors(); }, []);
 
   return (
-    <div className="dash-shell">
-      <aside className="dash-sidebar">
-        <div className="dash-sidebar-logo"><span>⚕ Medi<em>Connect</em></span></div>
-        <div className="dash-user-card">
-          <div className="dash-user-avatar">{userInitials}</div>
-          <div className="dash-user-info">
-            <strong>{user?.name}</strong>
-            <span>Patient</span>
-          </div>
-        </div>
-        <nav className="dash-nav">
-          <div className="dash-nav-label">Navigation</div>
-          {navItems.map(item => (
-            <button key={item.route} className={`dash-nav-item ${currentPath===item.route?'active':''}`} onClick={() => navigate(item.route)}>
-              <span className="dash-nav-icon">{item.icon}</span>{item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="dash-sidebar-footer">
-          <button className="dash-logout-btn" onClick={() => { logout(); navigate('/login'); }}>
-            <span>🚪</span> Sign Out
-          </button>
-        </div>
-      </aside>
-
-      <main className="dash-main">
+    <>
         <div className="dash-header">
           <div>
             <div className="dash-header-title">Find Doctors</div>
             <div className="dash-header-sub">Browse and book appointments with verified specialists</div>
-          </div>
-          <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
-            <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem'}}>{userInitials}</div>
           </div>
         </div>
 
@@ -84,7 +46,7 @@ const BrowseDoctors = () => {
               <input
                 className="hc-input"
                 style={{margin:0,flex:1}}
-                placeholder="Search by specialty (e.g. Cardiology, Dermatology)..."
+                placeholder="Search by name or specialty (e.g. Cardiology, Dr. Smith)..."
                 value={specialty}
                 onChange={e => setSpecialty(e.target.value)}
               />
@@ -157,8 +119,7 @@ const BrowseDoctors = () => {
             </>
           )}
         </div>
-      </main>
-    </div>
+    </>
   );
 };
 

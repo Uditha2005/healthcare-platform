@@ -25,8 +25,8 @@ const UploadReports = () => {
   };
 
   return (
-    <div style={{minHeight:'100vh',background:'#f0f9ff',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'32px 24px',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-      <div className="hc-form-card" style={{maxWidth:'520px'}}>
+    <div style={{padding:'24px',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div className="hc-form-card" style={{maxWidth:'100%'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'28px'}}>
           <div>
             <h2 style={{fontFamily:"'Outfit',sans-serif",fontSize:'1.5rem',fontWeight:800}}>Upload Report</h2>

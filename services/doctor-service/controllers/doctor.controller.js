@@ -10,10 +10,18 @@ exports.createDoctor = async (req, res) => {
   }
 };
 
-// GET all doctors
+// GET all doctors (supports ?specialty= and ?name= query filters)
 exports.getDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find();
+    const conditions = [];
+    if (req.query.specialty) {
+      conditions.push({ specialization: { $regex: req.query.specialty, $options: "i" } });
+    }
+    if (req.query.name) {
+      conditions.push({ name: { $regex: req.query.name, $options: "i" } });
+    }
+    const filter = conditions.length > 0 ? { $or: conditions } : {};
+    const doctors = await Doctor.find(filter);
     res.status(200).json(doctors);
   } catch (err) {
     res.status(500).json({ message: err.message });

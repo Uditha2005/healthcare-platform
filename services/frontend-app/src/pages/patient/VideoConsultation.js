@@ -88,7 +88,7 @@ const VideoConsultation = () => {
 };
 
 const styles = {
-  container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
+  container: { padding: '24px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' },
   card: { background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },

@@ -162,8 +162,6 @@ const Payment = () => {
 
 const styles = {
   container: {
-    minHeight: '100vh',
-    background: '#f4f6fb',
     padding: '24px',
     display: 'flex',
     justifyContent: 'center'

@@ -1,18 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { icon:'🏠', label:'Dashboard', route:'/patient/dashboard' },
-  { icon:'📅', label:'Appointments', route:'/patient/appointments' },
-  { icon:'🔍', label:'Find Doctors', route:'/patient/browse-doctors' },
-  { icon:'🗂️', label:'Medical Records', route:'/patient/medical-records' },
-  { icon:'📋', label:'Upload Reports', route:'/patient/upload-reports' },
-  { icon:'🎥', label:'Video Consult', route:'/patient/video-consultation' },
-  { icon:'👤', label:'My Profile', route:'/patient/profile' },
-];
 
 const empty = {
   phone:'', address:'', dateOfBirth:'', gender:'', bloodType:'',
@@ -21,9 +10,7 @@ const empty = {
 const toDateInput = v => v ? new Date(v).toISOString().split('T')[0] : '';
 
 const PatientProfile = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const currentPath = window.location.pathname;
+  const { user } = useAuth();
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,40 +55,11 @@ const PatientProfile = () => {
   };
 
   return (
-    <div className="dash-shell">
-      <aside className="dash-sidebar">
-        <div className="dash-sidebar-logo"><span>⚕ Medi<em>Connect</em></span></div>
-        <div className="dash-user-card">
-          <div className="dash-user-avatar">{initials}</div>
-          <div className="dash-user-info">
-            <strong>{user?.name}</strong>
-            <span>Patient</span>
-          </div>
-        </div>
-        <nav className="dash-nav">
-          <div className="dash-nav-label">Navigation</div>
-          {navItems.map(item => (
-            <button key={item.route} className={`dash-nav-item ${currentPath===item.route?'active':''}`} onClick={() => navigate(item.route)}>
-              <span className="dash-nav-icon">{item.icon}</span>{item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="dash-sidebar-footer">
-          <button className="dash-logout-btn" onClick={() => { logout(); navigate('/login'); }}>
-            <span>🚪</span> Sign Out
-          </button>
-        </div>
-      </aside>
-
-      <main className="dash-main">
+    <>
         <div className="dash-header">
           <div>
             <div className="dash-header-title">My Profile</div>
             <div className="dash-header-sub">Manage your personal information</div>
-          </div>
-          <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
-            <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem'}}>{initials}</div>
           </div>
         </div>
 
@@ -186,8 +144,7 @@ const PatientProfile = () => {
             </form>
           )}
         </div>
-      </main>
-    </div>
+    </>
   );
 };
 

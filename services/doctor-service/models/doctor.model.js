@@ -29,6 +29,10 @@ const doctorSchema = new mongoose.Schema(
         endTime: String,
       },
     ],
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

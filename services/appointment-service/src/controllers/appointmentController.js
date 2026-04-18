@@ -379,6 +379,27 @@ exports.deleteAppointment = async (req, res) => {
   }
 };
 
+// GET /appointments/check-slot?doctorId=&date=&time= - Check if a slot is available
+exports.checkSlotAvailability = async (req, res) => {
+  try {
+    const { doctorId, date, time } = req.query;
+    if (!doctorId || !date || !time) {
+      return res.status(400).json({ message: 'doctorId, date, and time are required' });
+    }
+
+    const existing = await Appointment.findOne({
+      doctorId,
+      date,
+      time,
+      status: { $ne: 'cancelled' }
+    });
+
+    res.json({ available: !existing });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // GET /doctors/search?specialty=... - Search doctors by specialty
 exports.searchDoctors = async (req, res) => {
   try {
