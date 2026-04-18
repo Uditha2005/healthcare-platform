@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PatientLayout from './components/patient/PatientLayout';
 
 // Patient
 import PatientDashboard from './pages/patient/Dashboard';
@@ -50,15 +51,15 @@ const App = () => {
           <Route path="/register" element={<Register />} />
 
           {/* Patient Routes */}
-          <Route path="/patient/dashboard" element={<ProtectedRoute role="patient"><PatientDashboard /></ProtectedRoute>} />
-          <Route path="/patient/browse-doctors" element={<ProtectedRoute role="patient"><BrowseDoctors /></ProtectedRoute>} />
-          <Route path="/patient/book-appointment" element={<ProtectedRoute role="patient"><BookAppointment /></ProtectedRoute>} />
-          <Route path="/patient/payment" element={<ProtectedRoute role="patient"><Payment /></ProtectedRoute>} />
-          <Route path="/patient/profile" element={<ProtectedRoute role="patient"><PatientProfile /></ProtectedRoute>} />
-          <Route path="/patient/appointments" element={<ProtectedRoute role="patient"><PatientAppointments /></ProtectedRoute>} />
-          <Route path="/patient/medical-records" element={<ProtectedRoute role="patient"><PatientMedicalRecords /></ProtectedRoute>} />
-          <Route path="/patient/upload-reports" element={<ProtectedRoute role="patient"><UploadReports /></ProtectedRoute>} />
-          <Route path="/patient/video-consultation" element={<ProtectedRoute role="patient"><VideoConsultation /></ProtectedRoute>} />
+          <Route path="/patient/dashboard" element={<ProtectedRoute role="patient"><PatientLayout><PatientDashboard /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/browse-doctors" element={<ProtectedRoute role="patient"><PatientLayout><BrowseDoctors /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/book-appointment" element={<ProtectedRoute role="patient"><PatientLayout><BookAppointment /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/payment" element={<ProtectedRoute role="patient"><PatientLayout><Payment /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/profile" element={<ProtectedRoute role="patient"><PatientLayout><PatientProfile /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/appointments" element={<ProtectedRoute role="patient"><PatientLayout><PatientAppointments /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/medical-records" element={<ProtectedRoute role="patient"><PatientLayout><PatientMedicalRecords /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/upload-reports" element={<ProtectedRoute role="patient"><PatientLayout><UploadReports /></PatientLayout></ProtectedRoute>} />
+          <Route path="/patient/video-consultation" element={<ProtectedRoute role="patient"><PatientLayout><VideoConsultation /></PatientLayout></ProtectedRoute>} />
 
           {/* Doctor Routes */}
           <Route path="/doctor/dashboard" element={<ProtectedRoute role="doctor"><DoctorDashboard /></ProtectedRoute>} />

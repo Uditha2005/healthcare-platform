@@ -9,7 +9,8 @@ const {
   deleteAppointment,
   searchDoctors,
   getDoctorById,
-  getDoctorAvailability
+  getDoctorAvailability,
+  checkSlotAvailability
 } = require('../controllers/appointmentController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,6 +20,9 @@ router.use(protect); // All routes require authentication
 router.get('/doctors/search', searchDoctors);
 router.get('/doctors/:id', getDoctorById);
 router.get('/doctors/:id/availability', getDoctorAvailability);
+
+// Slot availability check (must be before /:id routes)
+router.get('/check-slot', checkSlotAvailability);
 
 // Appointment CRUD
 router.get('/', getAppointments);

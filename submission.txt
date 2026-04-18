@@ -1,0 +1,815 @@
+================================================================================
+  SE3020 – Distributed Systems | Assignment 1
+  AI-Enabled Smart Healthcare Appointment & Telemedicine Platform
+================================================================================
+
+GitHub Repository Link:
+https://github.com/<your-username>/healthcare-platform
+
+YouTube Video Link:
+https://www.youtube.com/watch?v=<your-video-id>
+
+================================================================================
+  REPOSITORY DIRECTORY STRUCTURE
+================================================================================
+
+healthcare-platform/
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+├── readme.txt
+├── submission.txt
+├── members.txt
+├── start-all.sh
+├── k8s/
+│   ├── mongo.yaml
+│   ├── ai-symptom-service.yaml
+│   ├── appointment-service.yaml
+│   ├── notification-service.yaml
+│   ├── patient-service.yaml
+│   └── payment-service.yaml
+├── services/
+│   ├── api-gateway/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       └── app.js
+│   ├── auth-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       ├── models/
+│   │       └── routes/
+│   ├── patient-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       ├── models/
+│   │       └── routes/
+│   ├── appointment-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       ├── models/
+│   │       └── routes/
+│   ├── doctor-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── server.js
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   └── routes/
+│   ├── telemedicine-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── server.js
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   └── routes/
+│   ├── payment-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       ├── models/
+│   │       └── routes/
+│   ├── notification-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       ├── models/
+│   │       └── routes/
+│   ├── ai-symptom-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── app.js
+│   │       ├── controllers/
+│   │       ├── middleware/
+│   │       └── routes/
+│   └── frontend-app/
+│       ├── Dockerfile
+│       ├── package.json
+│       ├── public/
+│       └── src/
+│           ├── App.js
+│           ├── index.js
+│           ├── components/
+│           ├── context/
+│           ├── pages/
+│           └── services/
+└── client/
+
+================================================================================
+  MEMBER CONTRIBUTIONS – KEY FUNCTIONS & CODE SEGMENTS
+================================================================================
+
+──────────────────────────────────────────────────────────────────────────────
+  MEMBER 1 – Frontend + Auth Service + API Gateway
+  Services: frontend-app, auth-service, api-gateway
+──────────────────────────────────────────────────────────────────────────────
+
+Function 1: User Registration (Auth Service)
+File: services/auth-service/src/controllers/authController.js
+Description: Handles user registration with password hashing and JWT token
+             generation. Supports Patient, Doctor, and Admin roles.
+
+  const generateToken = (user) => {
+    return jwt.sign(
+      { id: user._id, role: user.role, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+  };
+
+  // POST /api/auth/register
+  exports.register = async (req, res) => {
+    try {
+      const { name, email, password, role, specialization, experience } = req.body;
+
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered' });
+      }
+
+      const user = await User.create({ name, email, password, role });
+
+      if (role === 'doctor') {
+        try {
+          await axios.post(`${DOCTOR_SERVICE_URL}/api/doctors`, {
+            userId: user._id,
+            name,
+            email,
+            specialization: specialization || 'General',
+            experience: Number(experience) || 0,
+            availability: []
+          });
+        } catch (syncErr) {
+          console.error('Doctor profile sync failed:', syncErr.message);
+          await User.findByIdAndDelete(user._id);
+          return res.status(500).json({ message: 'Failed to create doctor profile. Please try again.' });
+        }
+      }
+
+      const token = generateToken(user);
+
+      res.status(201).json({
+        message: 'Registration successful',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 2: User Login & JWT Authentication (Auth Service)
+File: services/auth-service/src/controllers/authController.js
+Description: Authenticates users by verifying credentials and issuing JWT
+             tokens for session management across microservices.
+
+  // POST /api/auth/login
+  exports.login = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      const token = generateToken(user);
+
+      res.status(200).json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 3: API Gateway Request Routing (API Gateway)
+File: services/api-gateway/src/app.js
+Description: Central entry point that proxies and routes all client
+             requests to the appropriate microservice using
+             http-proxy-middleware.
+
+  const express = require('express');
+  const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
+
+  // Doctor Service Route
+  app.use('/api/doctors', createProxyMiddleware({
+    target: process.env.DOCTOR_SERVICE_URL || 'http://localhost:5002',
+    changeOrigin: true,
+    onProxyReq: fixRequestBody
+  }));
+
+  // Telemedicine / Sessions Route
+  app.use('/api/sessions', createProxyMiddleware({
+    target: process.env.TELEMEDICINE_SERVICE_URL || 'http://localhost:5003',
+    changeOrigin: true,
+    onProxyReq: fixRequestBody
+  }));
+
+  // Auth Service
+  app.use('/api/auth', createProxyMiddleware({
+    target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+    changeOrigin: true,
+    onProxyReq: fixRequestBody,
+    onError: (err, req, res) => {
+      res.status(502).json({ message: 'Auth service unavailable' });
+    }
+  }));
+
+  // Patient Service
+  app.use('/api/patient', createProxyMiddleware({
+    target: process.env.PATIENT_SERVICE_URL || 'http://localhost:3002',
+    changeOrigin: true,
+    onProxyReq: fixRequestBody
+  }));
+
+  // Appointment Service
+  app.use('/api/appointments', createProxyMiddleware({
+    target: process.env.APPOINTMENT_SERVICE_URL || 'http://localhost:3003',
+    changeOrigin: true,
+    onProxyReq: fixRequestBody
+  }));
+
+  // Payment Service
+  app.use('/api/payment', createProxyMiddleware({
+    target: process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004',
+    changeOrigin: true,
+  }));
+
+  // AI Symptom Service
+  app.use('/api/ai', createProxyMiddleware({
+    target: process.env.AI_SERVICE_URL || 'http://localhost:3006',
+    changeOrigin: true,
+  }));
+
+──────────────────────────────────────────────────────────────────────────────
+  MEMBER 2 – Patient Service + Appointment Service
+  Services: patient-service, appointment-service
+──────────────────────────────────────────────────────────────────────────────
+
+Function 1: Patient Profile Management (Patient Service)
+File: services/patient-service/src/controllers/patientController.js
+Description: Allows patients to view and update their profile information
+             and manage their medical history.
+
+  // GET /profile
+  exports.getProfile = async (req, res) => {
+    try {
+      const patient = await Patient.findOne({ userId: req.user.id });
+      if (!patient) {
+        return res.status(404).json({ message: 'Patient profile not found' });
+      }
+      res.json(patient);
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+  // PUT /profile
+  exports.updateProfile = async (req, res) => {
+    try {
+      const updates = { ...req.body, userId: req.user.id };
+      const patient = await Patient.findOneAndUpdate(
+        { userId: req.user.id },
+        updates,
+        { new: true, runValidators: true, upsert: true }
+      );
+      res.json({ message: 'Profile saved successfully', patient });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 2: Medical Report Upload (Patient Service)
+File: services/patient-service/src/controllers/patientController.js
+Description: Handles secure file upload of medical reports/documents
+             using Multer middleware with file validation.
+
+  // Configure multer for file uploads
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+
+  const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Invalid file type'));
+      }
+    }
+  }).single('report');
+
+  // POST /upload-report
+  exports.uploadReport = async (req, res) => {
+    upload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      try {
+        const patient = await Patient.findOne({ userId: req.user.id });
+        if (!patient) {
+          return res.status(404).json({ message: 'Patient profile not found' });
+        }
+        patient.reports.push({
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          description: req.body.description || '',
+          path: req.file.path
+        });
+        await patient.save();
+        res.json({ message: 'Report uploaded successfully', report: patient.reports[patient.reports.length - 1] });
+      } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+      }
+    });
+  };
+
+────────────────────────────────────────────────────
+
+Function 3: Book Appointment (Appointment Service)
+File: services/appointment-service/src/controllers/appointmentController.js
+Description: Creates a new appointment booking between a patient and a
+             doctor with date, time, and specialty selection.
+
+  // POST /appointments
+  exports.createAppointment = async (req, res) => {
+    try {
+      if (req.user.role !== 'patient') {
+        return res.status(403).json({ message: 'Only patients can book appointments' });
+      }
+
+      const { doctorId, specialty, date, time, notes } = req.body;
+
+      if (!doctorId || !specialty || !date || !time) {
+        return res.status(400).json({ message: 'doctorId, specialty, date, and time are required' });
+      }
+
+      // Verify doctor exists and check availability via doctor-service
+      try {
+        const doctorRes = await axios.get(`${DOCTOR_SERVICE_URL}/api/doctors/${doctorId}`);
+        const doctor = doctorRes.data;
+
+        if (doctor.availability && doctor.availability.length > 0) {
+          const requestedDate = new Date(date);
+          const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const requestedDay = days[requestedDate.getDay()];
+
+          const daySlots = doctor.availability.filter(a => a.day === requestedDay);
+          if (daySlots.length === 0) {
+            return res.status(400).json({ message: 'Doctor is not available on the selected date' });
+          }
+
+          const isWithinSlot = daySlots.some(slot => {
+            return time >= slot.startTime && time < slot.endTime;
+          });
+          if (!isWithinSlot) {
+            return res.status(400).json({
+              message: 'Doctor is not available at the selected time',
+              availableSlots: daySlots.map(s => `${s.startTime} - ${s.endTime}`)
+            });
+          }
+        }
+      } catch (err) {
+        if (err.response && err.response.status === 404) {
+          return res.status(404).json({ message: 'Doctor not found' });
+        }
+        console.error('Doctor service unavailable:', err.message);
+      }
+
+      // Check if slot is already booked
+      const existing = await Appointment.findOne({
+        doctorId, date, time, status: { $ne: 'cancelled' }
+      });
+      if (existing) {
+        return res.status(400).json({ message: 'Time slot already booked' });
+      }
+
+      const appointment = await Appointment.create({
+        patientId: req.user.id,
+        doctorId, specialty, date, time, notes
+      });
+
+      res.status(201).json({ message: 'Appointment booked successfully', appointment });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+──────────────────────────────────────────────────────────────────────────────
+  MEMBER 3 – Doctor Service + Telemedicine Service
+  Services: doctor-service, telemedicine-service
+──────────────────────────────────────────────────────────────────────────────
+
+Function 1: Doctor Availability Management (Doctor Service)
+File: services/doctor-service/controllers/doctor.controller.js
+Description: Allows doctors to set and update their availability schedule
+             including available days, time slots, and consultation types.
+
+  // UPDATE doctor availability by userId
+  exports.updateAvailability = async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { availability } = req.body;
+
+      if (!availability || !Array.isArray(availability)) {
+        return res.status(400).json({ message: "availability array is required" });
+      }
+
+      const doctor = await Doctor.findOne({ userId });
+      if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+      }
+
+      doctor.availability = availability;
+      await doctor.save();
+
+      res.status(200).json({ message: "Availability updated", availability: doctor.availability });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+
+  // GET doctor availability by doctor _id
+  exports.getAvailability = async (req, res) => {
+    try {
+      const doctor = await Doctor.findById(req.params.id);
+      if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+      }
+      res.status(200).json({ availability: doctor.availability || [] });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 2: Issue Digital Prescription (Doctor Service)
+File: services/doctor-service/controllers/doctor.controller.js
+Description: Enables doctors to create and issue digital prescriptions
+             for patients after a consultation.
+
+  Note: Prescriptions are managed via the Patient Service. The doctor
+  calls the patient-service endpoint to add prescriptions to a patient
+  record. See patient-service/src/controllers/patientController.js:
+
+  // POST /prescriptions - Add a prescription (doctor only)
+  exports.addPrescription = async (req, res) => {
+    try {
+      const { patientId, medication, dosage, instructions } = req.body;
+
+      if (!patientId || !medication || !dosage) {
+        return res.status(400).json({ message: 'patientId, medication, and dosage are required' });
+      }
+
+      const patient = await Patient.findOne({ userId: patientId });
+      if (!patient) {
+        return res.status(404).json({ message: 'Patient not found' });
+      }
+
+      let doctorName = 'Doctor';
+      try {
+        const doctorUser = await User.findById(req.user.id).select('name');
+        if (doctorUser && doctorUser.name) doctorName = doctorUser.name;
+      } catch (_) {}
+
+      let patientName = 'Patient';
+      try {
+        const patientUser = await User.findById(patientId).select('name');
+        if (patientUser && patientUser.name) patientName = patientUser.name;
+      } catch (_) {}
+
+      const prescription = {
+        date: new Date(),
+        medication, dosage,
+        instructions: instructions || '',
+        doctor: req.user.id,
+        doctorName, patientName
+      };
+
+      patient.prescriptions.push(prescription);
+      await patient.save();
+
+      res.status(201).json({
+        message: 'Prescription added successfully',
+        prescription: patient.prescriptions[patient.prescriptions.length - 1]
+      });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 3: Create Telemedicine Session (Telemedicine Service)
+File: services/telemedicine-service/controllers/session.controller.js
+Description: Creates a new video consultation session and generates
+             session credentials for both patient and doctor.
+
+  // CREATE SESSION + JITSI LINK (linked to an appointment)
+  exports.createSession = async (req, res) => {
+    try {
+      const { doctorId, patientId, appointmentId } = req.body;
+
+      if (!doctorId || !patientId || !appointmentId) {
+        return res.status(400).json({ message: "doctorId, patientId, and appointmentId are required" });
+      }
+
+      // Check if session already exists for this appointment
+      const existing = await Session.findOne({ appointmentId });
+      if (existing) {
+        return res.status(200).json(existing);
+      }
+
+      // Generate Jitsi meeting room
+      const roomName = `healthcare-${appointmentId}-${Date.now()}`;
+      const meetingLink = `https://meet.jit.si/${roomName}`;
+
+      const session = await Session.create({
+        doctorId,
+        patientId,
+        appointmentId,
+        meetingLink,
+        status: "active",
+      });
+
+      res.status(201).json(session);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+
+──────────────────────────────────────────────────────────────────────────────
+  MEMBER 4 – Payment + Notification + AI Symptom + DevOps
+  Services: payment-service, notification-service, ai-symptom-service,
+            Docker & Kubernetes configuration
+──────────────────────────────────────────────────────────────────────────────
+
+Function 1: Process Payment via Stripe (Payment Service)
+File: services/payment-service/src/controllers/paymentController.js
+Description: Integrates with Stripe payment gateway to process
+             consultation fee payments in sandbox/test mode.
+
+  const Stripe = require('stripe');
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const toMinorUnits = (amount) => Math.round(Number(amount) * 100);
+
+  exports.createPayment = async (req, res) => {
+    try {
+      const { appointmentId, doctorId, amount, currency = 'lkr' } = req.body;
+
+      if (!appointmentId || !doctorId || !amount) {
+        return res.status(400).json({ message: 'appointmentId, doctorId and amount are required' });
+      }
+      if (Number(amount) <= 0) {
+        return res.status(400).json({ message: 'Amount must be greater than 0' });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: toMinorUnits(amount),
+        currency: currency.toLowerCase(),
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
+        },
+        metadata: {
+          appointmentId,
+          patientId: req.user.id,
+          doctorId
+        }
+      });
+
+      const payment = await Payment.create({
+        appointmentId,
+        patientId: req.user.id,
+        doctorId,
+        amount: Number(amount),
+        currency: currency.toLowerCase(),
+        status: paymentIntent.status,
+        stripePaymentIntentId: paymentIntent.id,
+        metadata: paymentIntent.metadata
+      });
+
+      return res.status(201).json({
+        message: 'Payment intent created',
+        payment: {
+          id: payment._id,
+          status: payment.status,
+          amount: payment.amount,
+          currency: payment.currency,
+          stripePaymentIntentId: payment.stripePaymentIntentId,
+          clientSecret: paymentIntent.client_secret
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ message: 'Unable to create payment', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 2: Send Email & SMS Notifications (Notification Service)
+File: services/notification-service/src/controllers/notificationController.js
+Description: Sends appointment confirmation and consultation completion
+             notifications via email (Nodemailer/SendGrid) and SMS.
+
+  const createTransporter = () => {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  };
+
+  const sendSmsWithNotifyLk = async ({ phone, message }) => {
+    const params = new URLSearchParams({
+      user_id: process.env.NOTIFYLK_USER_ID,
+      api_key: process.env.NOTIFYLK_API_KEY,
+      sender_id: process.env.NOTIFYLK_SENDER_ID || 'NotifyDEMO',
+      to: normalizeSriLankanPhone(phone),
+      message
+    });
+    const baseUrl = process.env.NOTIFYLK_API_BASE_URL || 'https://app.notify.lk/api/v1';
+    const response = await fetch(`${baseUrl}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'success') {
+      throw new Error(result.message || 'Notify.lk API request failed');
+    }
+    return { status: 'sent' };
+  };
+
+  exports.sendNotification = async (req, res) => {
+    try {
+      const { eventType = 'custom', recipient, subject, message, html, booking } = req.body;
+
+      if (!recipient || !message) {
+        return res.status(400).json({ message: 'recipient and message are required' });
+      }
+
+      // Send email via Nodemailer/SendGrid
+      const transporter = createTransporter();
+      if (recipient.email && transporter) {
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: recipient.email,
+          subject, text: message, html
+        });
+      }
+
+      // Send SMS via Notify.lk
+      if (recipient.phone) {
+        await sendSmsWithNotifyLk({ phone: recipient.phone, message });
+      }
+
+      const log = await NotificationLog.create({
+        eventType, recipient, subject, message
+      });
+
+      return res.status(201).json({ message: 'Notification processed', notification: log });
+    } catch (err) {
+      return res.status(500).json({ message: 'Unable to send notification', error: err.message });
+    }
+  };
+
+────────────────────────────────────────────────────
+
+Function 3: AI Symptom Analysis (AI Symptom Service)
+File: services/ai-symptom-service/src/controllers/aiController.js
+Description: Accepts patient symptoms as input, sends them to the
+             Google Gemini AI API, and returns preliminary health
+             suggestions with recommended doctor specialties.
+
+  exports.checkSymptoms = async (req, res) => {
+    try {
+      const { symptoms, age, gender, duration, notes } = req.body;
+
+      if (!Array.isArray(symptoms) || symptoms.length === 0) {
+        return res.status(400).json({ message: 'symptoms must be a non-empty array of strings' });
+      }
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ message: 'GEMINI_API_KEY is not configured' });
+      }
+
+      const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const baseUrl = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
+
+      const prompt = buildPrompt({ symptoms, age, gender, duration, notes });
+
+      const requestPayload = {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 250,
+          responseMimeType: 'application/json',
+          thinkingConfig: { thinkingBudget: 0 }
+        }
+      };
+
+      const endpoint = `${baseUrl}/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return res.status(response.status).json({
+          message: 'Gemini request failed',
+          error: data?.error?.message || 'Unknown Gemini error'
+        });
+      }
+
+      const content = getCandidateText(data);
+      const parsed = extractJsonObject(content);
+
+      if (!parsed) {
+        return res.status(502).json({ message: 'Unable to parse AI response', raw: content });
+      }
+
+      return res.status(200).json({
+        suggestion: parsed.suggestion || 'No suggestion available',
+        doctorType: parsed.doctorType || 'General Physician',
+        possibleConditions: Array.isArray(parsed.possibleConditions) ? parsed.possibleConditions : [],
+        urgency: parsed.urgency || 'medium',
+        homeCareAdvice: Array.isArray(parsed.homeCareAdvice) ? parsed.homeCareAdvice : [],
+        warning: parsed.warning || 'This is not a medical diagnosis. Consult a licensed doctor.'
+      });
+    } catch (err) {
+      return res.status(500).json({ message: 'Unable to process symptom check', error: err.message });
+    }
+  };
+
+
+================================================================================
+  END OF SUBMISSION
+================================================================================

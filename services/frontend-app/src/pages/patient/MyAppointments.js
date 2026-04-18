@@ -37,8 +37,8 @@ const PatientAppointments = () => {
   };
 
   return (
-    <div style={{minHeight:'100vh',background:'#f0f9ff',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-      <div style={{maxWidth:'1280px',margin:'0 auto',padding:'32px 24px'}}>
+    <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div style={{padding:'24px'}}>
         <div className="hc-page-header">
           <div>
             <div className="hc-page-title">My Appointments</div>

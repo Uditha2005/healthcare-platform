@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 
 const navItems = [
   { icon:'👤', label:'My Profile', route:'/admin/profile' },
@@ -14,13 +15,6 @@ const services = [
   { icon:'✅', label:'Verify Doctors', desc:'Review pending doctor registrations and approve or reject them', btn:'Verify Now', route:'/admin/verify-doctors', bg:'#f0fdf4', accent:'#10b981' },
 ];
 
-const stats = [
-  { icon:'👥', label:'Total Users', value:'—', iconBg:'#dbeafe' },
-  { icon:'👨‍⚕️', label:'Doctors', value:'—', iconBg:'#d1fae5' },
-  { icon:'🧑', label:'Patients', value:'—', iconBg:'#ede9fe' },
-  { icon:'⏳', label:'Pending Verify', value:'—', iconBg:'#fed7aa' },
-];
-
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -29,6 +23,35 @@ const AdminDashboard = () => {
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const [stats, setStats] = useState([
+    { icon:'👥', label:'Total Users', value:'...', iconBg:'#dbeafe' },
+    { icon:'👨‍⚕️', label:'Doctors', value:'...', iconBg:'#d1fae5' },
+    { icon:'🧑', label:'Patients', value:'...', iconBg:'#ede9fe' },
+    { icon:'⏳', label:'Pending Verify', value:'...', iconBg:'#fed7aa' },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/auth/users');
+        const users = res.data;
+        const total = users.length;
+        const doctors = users.filter(u => u.role === 'doctor').length;
+        const patients = users.filter(u => u.role === 'patient').length;
+        const pendingVerify = users.filter(u => u.role === 'doctor' && !u.isVerified).length;
+        setStats([
+          { icon:'👥', label:'Total Users', value: String(total), iconBg:'#dbeafe' },
+          { icon:'👨‍⚕️', label:'Doctors', value: String(doctors), iconBg:'#d1fae5' },
+          { icon:'🧑', label:'Patients', value: String(patients), iconBg:'#ede9fe' },
+          { icon:'⏳', label:'Pending Verify', value: String(pendingVerify), iconBg:'#fed7aa' },
+        ]);
+      } catch (err) {
+        console.error('Failed to fetch admin stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <div className="dash-shell">
