@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const BrowseDoctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -37,11 +38,14 @@ const BrowseDoctors = () => {
             <div className="dash-header-title">Find Doctors</div>
             <div className="dash-header-sub">Browse and book appointments with verified specialists</div>
           </div>
+          <div className="dash-header-right">
+            <ThemeToggle />
+          </div>
         </div>
 
         <div className="dash-content">
           {/* Search bar */}
-          <div style={{background:'white',borderRadius:'16px',border:'1px solid #e0f2fe',padding:'20px 24px',marginBottom:'24px',boxShadow:'0 2px 8px rgba(8,145,178,0.06)'}}>
+          <div style={{background:'var(--surface)',borderRadius:'16px',border:'1px solid var(--border)',padding:'20px 24px',marginBottom:'24px',boxShadow:'var(--shadow-sm)'}}>
             <form style={{display:'flex',gap:'12px'}} onSubmit={e => { e.preventDefault(); fetchDoctors(specialty); }}>
               <input
                 className="hc-input"
@@ -81,7 +85,7 @@ const BrowseDoctors = () => {
                         {initials(doc.name)}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,fontSize:'1rem',color:'#0c1a2e'}}>Dr. {doc.name}</div>
+                        <div style={{fontWeight:700,fontSize:'1rem',color:'var(--text-primary)'}}>Dr. {doc.name}</div>
                         <div style={{fontSize:'0.8rem',color:'#0891b2',fontWeight:600,marginTop:'2px'}}>{doc.specialization||doc.specialty||'General Physician'}</div>
                         <span style={{background:'#d1fae5',color:'#065f46',borderRadius:'999px',padding:'2px 8px',fontSize:'0.7rem',fontWeight:700}}>✓ Verified</span>
                       </div>
@@ -101,7 +105,7 @@ const BrowseDoctors = () => {
                     </div>
 
                     {doc.bio && (
-                      <p style={{fontSize:'0.8rem',color:'#64748b',lineHeight:1.5,marginBottom:'14px',borderTop:'1px solid #f0f9ff',paddingTop:'12px'}}>
+                      <p style={{fontSize:'0.8rem',color:'var(--text-muted)',lineHeight:1.5,marginBottom:'14px',borderTop:'1px solid var(--border)',paddingTop:'12px'}}>
                         {doc.bio.length > 100 ? doc.bio.slice(0,100)+'...' : doc.bio}
                       </p>
                     )}
@@ -123,6 +127,6 @@ const BrowseDoctors = () => {
   );
 };
 
-const s = { meta:{ display:'flex', gap:'8px', fontSize:'0.83rem', color:'#64748b', alignItems:'center' } };
+const s = { meta:{ display:'flex', gap:'8px', fontSize:'0.83rem', color:'var(--text-muted)', alignItems:'center' } };
 
 export default BrowseDoctors;

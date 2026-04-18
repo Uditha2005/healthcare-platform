@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const UploadReports = () => {
   const navigate = useNavigate();
@@ -32,7 +33,10 @@ const UploadReports = () => {
             <h2 style={{fontFamily:"'Outfit',sans-serif",fontSize:'1.5rem',fontWeight:800}}>Upload Report</h2>
             <p style={{color:'#64748b',fontSize:'0.88rem',marginTop:'4px'}}>Supported: PDF, JPG, JPEG, PNG (max 10MB)</p>
           </div>
-          <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <ThemeToggle />
+            <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>

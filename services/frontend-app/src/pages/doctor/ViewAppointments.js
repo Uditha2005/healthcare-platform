@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'🏠', label:'Dashboard', route:'/doctor/dashboard' },
@@ -64,7 +65,7 @@ const ViewAppointments = () => {
             <div className="dash-header-sub">{filtered.length} appointment{filtered.length !== 1 ? 's' : ''} shown</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             {appointments.filter(a => a.status === 'pending').length > 0 && (
               <span style={{background:'#f59e0b',color:'white',borderRadius:'999px',padding:'4px 12px',fontSize:'0.75rem',fontWeight:700}}>
                 {appointments.filter(a => a.status === 'pending').length} Pending
@@ -102,8 +103,8 @@ const ViewAppointments = () => {
                         {apt.patientName?.charAt(0)||'P'}
                       </div>
                       <div>
-                        <div style={{fontWeight:700,fontSize:'0.95rem',color:'#0c1a2e'}}>{apt.patientName||'Patient'}</div>
-                        <div style={{fontSize:'0.78rem',color:'#64748b'}}>{apt.specialty||'—'}</div>
+                        <div style={{fontWeight:700,fontSize:'0.95rem',color:'var(--text-primary)'}}>{apt.patientName||'Patient'}</div>
+                        <div style={{fontSize:'0.78rem',color:'var(--text-muted)'}}>{apt.specialty||'—'}</div>
                       </div>
                     </div>
                     <span className={statusClass[apt.status]||'hc-badge'}>{apt.status}</span>
@@ -114,7 +115,7 @@ const ViewAppointments = () => {
                     {apt.notes && <div style={s.row}>📝 <span style={{fontSize:'0.8rem'}}>{apt.notes}</span></div>}
                   </div>
                   {apt.status === 'pending' && (
-                    <div style={{display:'flex',gap:'8px',borderTop:'1px solid #e0f2fe',paddingTop:'14px'}}>
+                    <div style={{display:'flex',gap:'8px',borderTop:'1px solid var(--border)',paddingTop:'14px'}}>
                       <button className="hc-btn hc-btn-success" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={() => updateStatus(apt._id,'confirmed')}>✓ Accept</button>
                       <button className="hc-btn hc-btn-danger" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={() => updateStatus(apt._id,'cancelled')}>✕ Reject</button>
                     </div>
@@ -129,5 +130,5 @@ const ViewAppointments = () => {
   );
 };
 
-const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'#475569',alignItems:'flex-start'} };
+const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'var(--text-secondary)',alignItems:'flex-start'} };
 export default ViewAppointments;

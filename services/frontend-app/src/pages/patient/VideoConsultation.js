@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const VideoConsultation = () => {
   const navigate = useNavigate();
@@ -38,7 +39,10 @@ const VideoConsultation = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h2>🎥 Video Consultations</h2>
-        <button style={styles.backBtn} onClick={() => navigate('/patient/dashboard')}>← Back</button>
+        <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+          <ThemeToggle />
+          <button style={styles.backBtn} onClick={() => navigate('/patient/dashboard')}>← Back</button>
+        </div>
       </div>
       {loading ? <p>Loading sessions...</p> : (
         sessions.length === 0 ? (
@@ -91,8 +95,8 @@ const styles = {
   container: { padding: '24px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' },
-  card: { background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  empty: { background: 'white', padding: '40px', borderRadius: '12px', textAlign: 'center' },
+  card: { background: 'var(--surface)', padding: '24px', borderRadius: '12px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)', color: 'var(--text-primary)' },
+  empty: { background: 'var(--surface)', padding: '40px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-primary)', border: '1px solid var(--border)' },
   joinBtn: { marginTop: '12px', padding: '10px 20px', background: '#38a169', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', width: '100%' },
   waitingBtn: { marginTop: '12px', padding: '10px 20px', background: '#cbd5e0', color: '#718096', border: 'none', borderRadius: '8px', cursor: 'not-allowed', width: '100%' },
   endedBtn: { marginTop: '12px', padding: '10px 20px', background: '#e2e8f0', color: '#718096', border: 'none', borderRadius: '8px', cursor: 'not-allowed', width: '100%' },

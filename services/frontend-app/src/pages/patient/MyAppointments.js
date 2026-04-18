@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const toDateInput = v => v ? new Date(v).toISOString().split('T')[0] : '';
 
@@ -42,9 +43,10 @@ const PatientAppointments = () => {
         <div className="hc-page-header">
           <div>
             <div className="hc-page-title">My Appointments</div>
-            <p style={{color:'#64748b',marginTop:'4px',fontSize:'0.9rem'}}>{appointments.length} appointment{appointments.length!==1?'s':''} found</p>
+            <p style={{color:'var(--text-muted)',marginTop:'4px',fontSize:'0.9rem'}}>{appointments.length} appointment{appointments.length!==1?'s':''} found</p>
           </div>
-          <div style={{display:'flex',gap:'10px'}}>
+          <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
+            <ThemeToggle />
             <button className="hc-btn hc-btn-success" onClick={()=>navigate('/patient/browse-doctors')}>+ Book New</button>
             <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
           </div>
@@ -74,7 +76,7 @@ const PatientAppointments = () => {
                 </div>
 
                 {editingId===a._id ? (
-                  <form onSubmit={save} style={{borderTop:'1px solid #e0f2fe',paddingTop:'14px',marginTop:'4px'}}>
+                  <form onSubmit={save} style={{borderTop:'1px solid var(--border)',paddingTop:'14px',marginTop:'4px'}}>
                     <input className="hc-input" type="date" value={editForm.date} onChange={e=>setEditForm({...editForm,date:e.target.value})} required />
                     <input className="hc-input" type="time" value={editForm.time} onChange={e=>setEditForm({...editForm,time:e.target.value})} required />
                     <textarea className="hc-input" value={editForm.notes} onChange={e=>setEditForm({...editForm,notes:e.target.value})} placeholder="Notes" style={{minHeight:'70px'}} />
@@ -84,7 +86,7 @@ const PatientAppointments = () => {
                     </div>
                   </form>
                 ) : a.status!=='cancelled'&&a.status!=='completed' ? (
-                  <div style={{display:'flex',gap:'8px',borderTop:'1px solid #e0f2fe',paddingTop:'14px'}}>
+                  <div style={{display:'flex',gap:'8px',borderTop:'1px solid var(--border)',paddingTop:'14px'}}>
                     <button className="hc-btn hc-btn-accent" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={()=>beginEdit(a)}>Reschedule</button>
                     <button className="hc-btn hc-btn-danger" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={()=>cancel(a._id)}>Cancel</button>
                   </div>
@@ -98,5 +100,5 @@ const PatientAppointments = () => {
   );
 };
 
-const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'#475569',alignItems:'flex-start'} };
+const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'var(--text-secondary)',alignItems:'flex-start'} };
 export default PatientAppointments;

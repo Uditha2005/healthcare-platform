@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const navItems = [
   { icon:'👤', label:'My Profile', route:'/admin/profile' },
@@ -99,7 +100,7 @@ const AdminDashboard = () => {
             <div className="dash-header-sub">{new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn">🔔</button>
+            <ThemeToggle />
             <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem',background:'linear-gradient(135deg,#4f46e5,#0891b2)'}}>{initials}</div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AISymptomChatWidget from '../../components/patient/AISymptomChatWidget';
+import ThemeToggle from '../../components/ThemeToggle';
 import API from '../../services/api';
 
 const services = [
@@ -89,8 +90,7 @@ const PatientDashboard = () => {
             <div className="dash-header-sub">{new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</div>
           </div>
           <div className="dash-header-right">
-            <button className="dash-notif-btn" title="Notifications">🔔</button>
-            <button className="dash-notif-btn" title="Settings">⚙️</button>
+            <ThemeToggle />
             <div className="dash-user-avatar" style={{width:36,height:36,fontSize:'0.8rem'}}>{initials}</div>
           </div>
         </div>
