@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
 
-const toDateInput = value => {
-  if (!value) return '';
-  return new Date(value).toISOString().split('T')[0];
+const toDateInput = v => v ? new Date(v).toISOString().split('T')[0] : '';
+
+const statusStyle = {
+  pending:   'hc-badge hc-badge-pending',
+  confirmed: 'hc-badge hc-badge-confirmed',
+  cancelled: 'hc-badge hc-badge-cancelled',
+  completed: 'hc-badge hc-badge-completed',
 };
 
 const PatientAppointments = () => {
@@ -13,150 +17,86 @@ const PatientAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ date: '', time: '', notes: '' });
+  const [editForm, setEditForm] = useState({date:'',time:'',notes:''});
 
-  const loadAppointments = () => {
+  const load = () => {
     setLoading(true);
     API.get('/appointment')
-      .then(res => setAppointments(Array.isArray(res.data) ? res.data : res.data.appointments || []))
-      .catch(err => {
-        toast.error(err.response?.data?.message || 'Failed to load appointments');
-        setAppointments([]);
-      })
+      .then(res => setAppointments(Array.isArray(res.data)?res.data:res.data.appointments||[]))
+      .catch(err => { toast.error(err.response?.data?.message||'Failed to load'); setAppointments([]); })
       .finally(() => setLoading(false));
   };
+  useEffect(load,[]);
 
-  useEffect(() => {
-    loadAppointments();
-  }, []);
-
-  const beginEdit = appointment => {
-    setEditingId(appointment._id);
-    setEditForm({
-      date: toDateInput(appointment.date),
-      time: appointment.time || '',
-      notes: appointment.notes || ''
-    });
-  };
-
-  const cancelAppointment = async id => {
-    try {
-      await API.delete(`/appointment/${id}`);
-      toast.success('Appointment cancelled');
-      loadAppointments();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to cancel appointment');
-    }
-  };
-
-  const rescheduleAppointment = async e => {
+  const beginEdit = a => { setEditingId(a._id); setEditForm({date:toDateInput(a.date),time:a.time||'',notes:a.notes||''}); };
+  const cancel = async id => { try { await API.delete(`/appointment/${id}`); toast.success('Cancelled'); load(); } catch(e){ toast.error(e.response?.data?.message||'Failed'); } };
+  const save = async e => {
     e.preventDefault();
-    try {
-      await API.put(`/appointment/${editingId}`, {
-        date: new Date(editForm.date).toISOString(),
-        time: editForm.time,
-        notes: editForm.notes
-      });
-      toast.success('Appointment updated');
-      setEditingId(null);
-      loadAppointments();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update appointment');
-    }
-  };
-
-  const statusColor = {
-    pending: '#d69e2e',
-    confirmed: '#38a169',
-    cancelled: '#e53e3e',
-    completed: '#3182ce'
+    try { await API.put(`/appointment/${editingId}`,{date:new Date(editForm.date).toISOString(),time:editForm.time,notes:editForm.notes}); toast.success('Updated'); setEditingId(null); load(); }
+    catch(e){ toast.error(e.response?.data?.message||'Failed'); }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2>My Appointments</h2>
-        <div style={styles.headerActions}>
-          <button style={styles.bookBtn} onClick={() => navigate('/patient/browse-doctors')}>Book Appointment</button>
-          <button style={styles.backBtn} onClick={() => navigate('/patient/dashboard')}>Back</button>
+    <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div style={{padding:'24px'}}>
+        <div className="hc-page-header">
+          <div>
+            <div className="hc-page-title">My Appointments</div>
+            <p style={{color:'#64748b',marginTop:'4px',fontSize:'0.9rem'}}>{appointments.length} appointment{appointments.length!==1?'s':''} found</p>
+          </div>
+          <div style={{display:'flex',gap:'10px'}}>
+            <button className="hc-btn hc-btn-success" onClick={()=>navigate('/patient/browse-doctors')}>+ Book New</button>
+            <button className="hc-btn hc-btn-ghost" onClick={()=>navigate('/patient/dashboard')}>← Back</button>
+          </div>
         </div>
+
+        {loading ? <div className="hc-empty">Loading appointments...</div>
+        : appointments.length===0 ? (
+          <div className="hc-empty">
+            <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>📅</div>
+            <p style={{fontWeight:600,marginBottom:'8px'}}>No appointments yet</p>
+            <p style={{fontSize:'0.85rem',marginBottom:'20px'}}>Book your first appointment with a doctor</p>
+            <button className="hc-btn hc-btn-primary" onClick={()=>navigate('/patient/browse-doctors')}>Find Doctors</button>
+          </div>
+        ) : (
+          <div className="hc-grid-3">
+            {appointments.map(a => (
+              <div key={a._id} className="hc-card hc-animate">
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'14px'}}>
+                  <h3 style={{fontSize:'1rem',fontWeight:700}}>{a.specialty||'Appointment'}</h3>
+                  <span className={statusStyle[a.status]||'hc-badge'}>{a.status}</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'16px'}}>
+                  <div style={s.row}>👨‍⚕️ <span>Dr. {a.doctorName||'N/A'}</span></div>
+                  <div style={s.row}>📅 <span>{a.date?new Date(a.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Not set'}</span></div>
+                  <div style={s.row}>🕐 <span>{a.time||'—'}</span></div>
+                  {a.notes && <div style={s.row}>📝 <span style={{fontSize:'0.8rem'}}>{a.notes}</span></div>}
+                </div>
+
+                {editingId===a._id ? (
+                  <form onSubmit={save} style={{borderTop:'1px solid #e0f2fe',paddingTop:'14px',marginTop:'4px'}}>
+                    <input className="hc-input" type="date" value={editForm.date} onChange={e=>setEditForm({...editForm,date:e.target.value})} required />
+                    <input className="hc-input" type="time" value={editForm.time} onChange={e=>setEditForm({...editForm,time:e.target.value})} required />
+                    <textarea className="hc-input" value={editForm.notes} onChange={e=>setEditForm({...editForm,notes:e.target.value})} placeholder="Notes" style={{minHeight:'70px'}} />
+                    <div style={{display:'flex',gap:'8px'}}>
+                      <button className="hc-btn hc-btn-primary" type="submit" style={{flex:1,justifyContent:'center'}}>Save</button>
+                      <button className="hc-btn hc-btn-ghost" type="button" onClick={()=>setEditingId(null)}>Cancel</button>
+                    </div>
+                  </form>
+                ) : a.status!=='cancelled'&&a.status!=='completed' ? (
+                  <div style={{display:'flex',gap:'8px',borderTop:'1px solid #e0f2fe',paddingTop:'14px'}}>
+                    <button className="hc-btn hc-btn-accent" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={()=>beginEdit(a)}>Reschedule</button>
+                    <button className="hc-btn hc-btn-danger" style={{flex:1,justifyContent:'center',fontSize:'0.8rem'}} onClick={()=>cancel(a._id)}>Cancel</button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {loading ? <p>Loading appointments...</p> : appointments.length === 0 ? (
-        <div style={styles.empty}>
-          <p>No appointments yet.</p>
-          <button style={styles.bookBtn} onClick={() => navigate('/patient/browse-doctors')}>Find Doctors</button>
-        </div>
-      ) : (
-        <div style={styles.grid}>
-          {appointments.map(appointment => (
-            <div key={appointment._id} style={styles.card}>
-              <h3>{appointment.specialty || 'Appointment'}</h3>
-              <p>👨‍⚕️ Dr. {appointment.doctorName || 'N/A'}</p>
-              <p>Date: {appointment.date ? new Date(appointment.date).toLocaleDateString() : 'Not set'}</p>
-              <p>Time: {appointment.time}</p>
-              <p>Notes: {appointment.notes || 'No notes'}</p>
-              <p style={{ color: statusColor[appointment.status] || '#4a5568' }}>Status: {appointment.status}</p>
-
-              {editingId === appointment._id ? (
-                <form onSubmit={rescheduleAppointment} style={styles.editForm}>
-                  <input
-                    style={styles.input}
-                    type="date"
-                    value={editForm.date}
-                    onChange={e => setEditForm({ ...editForm, date: e.target.value })}
-                    required
-                  />
-                  <input
-                    style={styles.input}
-                    type="time"
-                    value={editForm.time}
-                    onChange={e => setEditForm({ ...editForm, time: e.target.value })}
-                    required
-                  />
-                  <textarea
-                    style={styles.textarea}
-                    value={editForm.notes}
-                    onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
-                    placeholder="Notes"
-                  />
-                  <div style={styles.actions}>
-                    <button style={styles.saveBtn} type="submit">Save</button>
-                    <button style={styles.neutralBtn} type="button" onClick={() => setEditingId(null)}>Close</button>
-                  </div>
-                </form>
-              ) : (
-                appointment.status !== 'cancelled' && appointment.status !== 'completed' && (
-                  <div style={styles.actions}>
-                    <button style={styles.saveBtn} onClick={() => beginEdit(appointment)}>Reschedule</button>
-                    <button style={styles.cancelBtn} onClick={() => cancelAppointment(appointment._id)}>Cancel</button>
-                  </div>
-                )
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
 
-const styles = {
-  container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' },
-  headerActions: { display: 'flex', gap: '10px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' },
-  card: { background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  empty: { background: 'white', padding: '40px', borderRadius: '8px', textAlign: 'center' },
-  editForm: { marginTop: '12px' },
-  input: { width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', minHeight: '80px', boxSizing: 'border-box' },
-  actions: { display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' },
-  saveBtn: { padding: '8px 14px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  cancelBtn: { padding: '8px 14px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  neutralBtn: { padding: '8px 14px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  bookBtn: { padding: '8px 14px', background: '#2f855a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  backBtn: { padding: '8px 14px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }
-};
-
+const s = { row:{display:'flex',gap:'8px',fontSize:'0.85rem',color:'#475569',alignItems:'flex-start'} };
 export default PatientAppointments;
